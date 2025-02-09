@@ -21,6 +21,10 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import java.io.IOException
+import io.mockk.every //For mocking
+import io.mockk.mockkStatic //For mocking
+import android.util.Log
+import io.mockk.unmockkAll
 
 @ExperimentalCoroutinesApi // Needed for runTest and Dispatchers.setMain
 class InsultViewModelTest {
@@ -37,6 +41,12 @@ class InsultViewModelTest {
         // Set the Main dispatcher to a test dispatcher.
         Dispatchers.setMain(StandardTestDispatcher())
 
+        // Mock the Log class
+        mockkStatic(Log::class)
+        every { Log.d(any(), any()) } returns 0
+        every { Log.e(any(), any()) } returns 0
+        every { Log.e(any(), any(), any()) } returns 0  // Mock the version with throwable
+
         // Create a *mock* of the InsultApiService.  We don't want to make real network calls in our unit tests.
         mockApiService = mockk()
 
@@ -48,6 +58,7 @@ class InsultViewModelTest {
     @After
     fun tearDown() {
         Dispatchers.resetMain() // Reset the main dispatcher to the original one
+        unmockkAll() // Unmock everything after each test
     }
     @Test
     fun `fetchInsult successfully updates uiState`() = runTest {
@@ -59,11 +70,11 @@ class InsultViewModelTest {
         coEvery { mockApiService.fetchInsult() } returns "{\"insult\": { \"text\": \"Test Insult\" , \"index\": 1}, \"image\": { \"data\": \"test_data\", \"mimetype\" : \"image/jpeg\",  \"indexImg\": 2} }"
 
         // Act: Call the function we want to test.
-        //viewModel.fetchInsultRepeatedly()  // Or call fetchInsult() directly if you prefer
+        viewModel.fetchInsult()
         advanceUntilIdle() // Important:  Wait for all coroutines to finish.
 
         // Assert: Check that the UI state is updated as expected.
-        val uiState = viewModel.uiState.value //No more first
+        val uiState = viewModel.uiState.value
         assertEquals("Test Insult", uiState.insultText)
         //assertEquals("test_data", uiState.imageBitmap) // Can't compare directly
         assertFalse(uiState.isLoading)
@@ -73,11 +84,11 @@ class InsultViewModelTest {
     fun `fetchInsult with null response updates uiState with error`() = runTest {
         coEvery { mockApiService.fetchInsult() } returns null
 
-        //viewModel.fetchInsultRepeatedly()
+        viewModel.fetchInsult()
         advanceUntilIdle() // Important:  Wait for all coroutines to finish.
 
 
-        val uiState = viewModel.uiState.value //No more first
+        val uiState = viewModel.uiState.value
         assertEquals("Error: Empty response body", uiState.error)
         assertTrue(uiState.insultText.isEmpty())
         assertNull(uiState.imageBitmap)
@@ -87,10 +98,10 @@ class InsultViewModelTest {
     fun `fetchInsult with network error updates uiState with error`() = runTest {
         coEvery { mockApiService.fetchInsult() } throws IOException("Network error")
 
-        //viewModel.fetchInsultRepeatedly()
+        viewModel.fetchInsult()
         advanceUntilIdle()
 
-        val uiState = viewModel.uiState.value  //No more first
+        val uiState = viewModel.uiState.value
         assertEquals("Error: java.io.IOException: Network error", uiState.error)
         assertTrue(uiState.insultText.isEmpty())
         assertNull(uiState.imageBitmap)
