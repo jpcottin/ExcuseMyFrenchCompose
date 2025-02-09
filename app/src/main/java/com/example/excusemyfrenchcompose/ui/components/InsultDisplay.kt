@@ -44,20 +44,20 @@ fun InsultDisplay(viewModel: InsultViewModel, modifier: Modifier = Modifier) {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Text (at least 15% of the screen height, centered vertically)
+        // Text (at least 15% of the screen height, centered vertically and horizontally)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = with(LocalDensity.current) { (0.15f * context.resources.displayMetrics.heightPixels).toDp() })
                 .wrapContentHeight(Alignment.CenterVertically), // Center vertically within its allocated space
+            contentAlignment = Alignment.Center // THIS IS THE KEY CHANGE
 
         ) {
             Text(
                 text = uiState.insultText,
                 style = MaterialTheme.typography.headlineLarge, // Use a larger text style
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-
-                )
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
