@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
-// UI State - moved here
+// UI State
 data class InsultUiState(
     val insultText: String = "",
     val imageBitmap: ImageBitmap? = null,
@@ -23,17 +23,16 @@ data class InsultUiState(
     val error: String? = null
 )
 
-// Interface for the ViewModel - Added
+// Interface for the ViewModel
 interface InsultViewModelInterface {
     val uiState: StateFlow<InsultUiState>
 }
 
-class InsultViewModel : ViewModel(), InsultViewModelInterface { // Implement interface
+class InsultViewModel(private val apiService: InsultApiService = InsultApiService()) : ViewModel(), InsultViewModelInterface { // Inject apiService
 
     private val _uiState = MutableStateFlow(InsultUiState(isLoading = true))
     override val uiState: StateFlow<InsultUiState> = _uiState.asStateFlow()
 
-    private val apiService = InsultApiService()
     private val lenientJson = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -53,7 +52,7 @@ class InsultViewModel : ViewModel(), InsultViewModelInterface { // Implement int
     }
 
     private suspend fun fetchInsult() {
-        _uiState.value = _uiState.value.copy(isLoading = true) // Show loading indicator
+        _uiState.value = _uiState.value.copy(isLoading = true)
         try {
             val responseBodyString = apiService.fetchInsult()
             if (!responseBodyString.isNullOrBlank()) {

@@ -45,9 +45,22 @@ android {
 dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation(libs.okhttp)
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+
+    // Unit Tests
+    testImplementation("junit:junit:4.13.2") // Or the latest version
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3") // For testing coroutines
+    testImplementation("androidx.arch.core:core-testing:2.2.0") // For testing LiveData/StateFlow
+    testImplementation("io.mockk:mockk:1.13.9") // Mocking library (optional but very useful)
+
+    // UI Tests (Compose)
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.6.1") // Use the correct version for your Compose version
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.6.1")
+    androidTestImplementation("androidx.test.ext:junit-ktx:1.1.5") // Kotlin extensions for JUnit
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1") // Espresso (optional, for interacting with non-Compose views)
+
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
