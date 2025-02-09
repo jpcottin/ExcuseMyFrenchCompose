@@ -1,5 +1,6 @@
 package com.example.excusemyfrenchcompose.ui.components
 
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -18,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -33,7 +36,7 @@ import com.example.excusemyfrenchcompose.R
 fun InsultDisplay(viewModel: InsultViewModel, modifier: Modifier = Modifier) {
 
     val uiState by viewModel.uiState.collectAsState()
-    val context = LocalContext.current // Get the context
+    val context = LocalContext.current
 
     Column(
         modifier = modifier
@@ -41,15 +44,22 @@ fun InsultDisplay(viewModel: InsultViewModel, modifier: Modifier = Modifier) {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Text (at least 15% of the screen height)
-        Text(
-            text = uiState.insultText,
-            style = MaterialTheme.typography.titleLarge,
+        // Text (at least 15% of the screen height, centered vertically)
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .defaultMinSize(minHeight = with(LocalDensity.current) { (0.15f * context.resources.displayMetrics.heightPixels).toDp() }),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
+                .defaultMinSize(minHeight = with(LocalDensity.current) { (0.15f * context.resources.displayMetrics.heightPixels).toDp() })
+                .wrapContentHeight(Alignment.CenterVertically), // Center vertically within its allocated space
+
+        ) {
+            Text(
+                text = uiState.insultText,
+                style = MaterialTheme.typography.headlineLarge, // Use a larger text style
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+
+                )
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
         HorizontalDivider()
         Spacer(modifier = Modifier.height(16.dp))
@@ -84,7 +94,7 @@ fun InsultDisplay(viewModel: InsultViewModel, modifier: Modifier = Modifier) {
                         modifier = Modifier
                             .fillMaxWidth(0.9f)
                             .fillMaxHeight(0.9f)
-                            .aspectRatio(1f) // Use a 1:1 aspect ratio
+                            .aspectRatio(1f)
                     )
                     Text("Error displaying image or decoding Base64 data.")
                 }
