@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import com.example.excusemyfrenchcompose.ui.viewmodel.InsultViewModelInterface
 import com.example.excusemyfrenchcompose.ui.viewmodel.InsultUiState
+import androidx.compose.ui.platform.testTag
 
 @Composable
 fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modifier) {
@@ -76,7 +77,7 @@ fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modi
         Spacer(modifier = Modifier.height(16.dp))
 
         if (uiState.isLoading) {
-            CircularProgressIndicator()
+            CircularProgressIndicator(modifier = Modifier.testTag("loadingIndicator"))
         } else {
             val imageBitmap = uiState.imageBitmap
             // Image (constrained to 90% of remaining width/height)
