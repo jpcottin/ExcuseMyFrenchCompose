@@ -1,21 +1,47 @@
 # Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Keep our model classes
+-keep class com.example.excusemyfrenchcompose.data.model.** { *; }
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Keep @Composable annotation
+-keepattributes *Annotation*
+-keepclassmembers class * {
+    @androidx.compose.runtime.Composable *;
+    @androidx.compose.animation.* <methods>;
+}
+# Needed for androidx.activity.compose.setContent
+-keep class androidx.activity.ComponentActivity { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Keep Kotlin metadata
+-keepattributes RuntimeVisibleAnnotations, RuntimeInvisibleAnnotations, Signature
+-keep class kotlin.Metadata { *; }
+-keep class kotlin.reflect.** { *; }
+-keep class kotlinx.serialization.** { *; }
+
+# Keep Serialization related classes and members.
+-keepclassmembers class com.example.excusemyfrenchcompose.** {
+  kotlinx.serialization.KSerializer serializer(...);
+}
+# Keep anything that uses @Keep
+-keep @interface androidx.annotation.Keep
+-keepclassmembers class * {
+    @androidx.annotation.Keep *;
+}
+-keep class * {
+  @androidx.annotation.Keep <fields>;
+}
+-keepclasseswithmembers class * {
+  @androidx.annotation.Keep <methods>;
+}
+#OkHttp
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-dontwarn javax.annotation.**
+-dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
+
+# R8 Optimization, helps with Compose performance
+-assumenosideeffects class android.util.Log {
+ public static *** d(...);
+ public static *** v(...);
+ public static *** i(...);
+}
