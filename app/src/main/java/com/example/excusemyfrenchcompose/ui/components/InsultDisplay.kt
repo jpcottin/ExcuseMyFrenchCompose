@@ -41,6 +41,7 @@ import com.example.excusemyfrenchcompose.ui.viewmodel.InsultViewModelInterface
 import com.example.excusemyfrenchcompose.ui.viewmodel.InsultUiState
 import androidx.compose.ui.platform.testTag
 
+
 @Composable
 fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modifier) {
 
