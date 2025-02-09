@@ -2,10 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    kotlin("plugin.serialization") version "2.1.10"
+    alias(libs.plugins.kotlin.serialization)
 }
-
-
 
 android {
     namespace = "com.example.excusemyfrenchcompose"
@@ -40,6 +38,9 @@ android {
     buildFeatures {
         compose = true
     }
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.11" // Use the correct version
+    }
 }
 
 dependencies {
@@ -50,21 +51,21 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
 
     // Unit Tests
-    testImplementation("junit:junit:4.13.2") // Or the latest version
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3") // For testing coroutines
-    testImplementation("androidx.arch.core:core-testing:2.2.0") // For testing LiveData/StateFlow
-    testImplementation("io.mockk:mockk:1.13.9") // Mocking library (optional but very useful)
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
+    testImplementation("io.mockk:mockk:1.13.9")
 
+    // Robolectric (for ImageUtilsTest)
     testImplementation("org.robolectric:robolectric:4.11.1")
     testImplementation("androidx.test:core-ktx:1.6.1")
-    testImplementation("androidx.test.ext:junit-ktx:1.2.1")
-    testImplementation("androidx.test.espresso:espresso-core:3.5.1")
+
 
     // UI Tests (Compose)
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.6.1") // Use the correct version for your Compose version
-    debugImplementation("androidx.compose.ui:ui-test-manifest:1.6.1")
-    androidTestImplementation("androidx.test.ext:junit-ktx:1.1.5") // Kotlin extensions for JUnit
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1") // Espresso (optional, for interacting with non-Compose views)
+    androidTestImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.test.manifest)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
 
 
     implementation(libs.androidx.core.ktx)
