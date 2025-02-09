@@ -12,7 +12,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.excusemyfrenchcompose.ui.components.InsultDisplay
 import com.example.excusemyfrenchcompose.ui.theme.ExcluseMyFrenchComposeTheme
 import com.example.excusemyfrenchcompose.ui.viewmodel.InsultViewModel
-
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -20,10 +19,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             ExcluseMyFrenchComposeTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    // Get the ViewModel using viewModel()
                     val viewModel: InsultViewModel = viewModel()
                     InsultDisplay(
-                        viewModel = viewModel, //Pass viewModel
+                        viewModel = viewModel,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }

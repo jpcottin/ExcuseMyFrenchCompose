@@ -31,9 +31,20 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.excusemyfrenchcompose.ui.viewmodel.InsultViewModel
 import com.example.excusemyfrenchcompose.R
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Color
+import com.example.excusemyfrenchcompose.ui.theme.ExcluseMyFrenchComposeTheme
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import com.example.excusemyfrenchcompose.ui.viewmodel.InsultViewModelInterface
+import com.example.excusemyfrenchcompose.ui.viewmodel.InsultUiState
 
 @Composable
-fun InsultDisplay(viewModel: InsultViewModel, modifier: Modifier = Modifier) {
+fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modifier) {
 
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -49,13 +60,13 @@ fun InsultDisplay(viewModel: InsultViewModel, modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = with(LocalDensity.current) { (0.15f * context.resources.displayMetrics.heightPixels).toDp() })
-                .wrapContentHeight(Alignment.CenterVertically), // Center vertically within its allocated space
-            contentAlignment = Alignment.Center // THIS IS THE KEY CHANGE
+                .wrapContentHeight(Alignment.CenterVertically),
+            contentAlignment = Alignment.Center
 
         ) {
             Text(
                 text = uiState.insultText,
-                style = MaterialTheme.typography.headlineLarge, // Use a larger text style
+                style = MaterialTheme.typography.headlineLarge,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
         }
@@ -100,5 +111,49 @@ fun InsultDisplay(viewModel: InsultViewModel, modifier: Modifier = Modifier) {
                 }
             }
         }
+    }
+}
+class InsultUiStatePreviewProvider : PreviewParameterProvider<InsultUiState> {
+    override val values: Sequence<InsultUiState> = sequenceOf(
+        InsultUiState(isLoading = true), // Loading state
+        InsultUiState(insultText = "Test Insult", imageBitmap = createTestBitmap(), isLoading = false), // Success state
+        InsultUiState(insultText = "Another Test Insult", imageBitmap = createTestBitmap(Color.Red), isLoading = false), // Another success
+        InsultUiState(error = "Error: Network connection failed", isLoading = false), // Error state
+        InsultUiState(insultText = "", imageBitmap = null, error = null, isLoading = false) // No insult, no image
+
+    )
+
+    // Helper function to create a simple ImageBitmap for preview purposes.
+    private fun createTestBitmap(color: Color = Color.Blue): ImageBitmap {
+        val width = 200
+        val height = 100
+        val bitmap = ImageBitmap(width, height, androidx.compose.ui.graphics.ImageBitmapConfig.Argb8888)
+        val canvas = androidx.compose.ui.graphics.Canvas(bitmap)
+        canvas.drawRect(
+            left = 0f,
+            top = 0f,
+            right = width.toFloat(),
+            bottom = height.toFloat(),
+            paint = androidx.compose.ui.graphics.Paint().apply {
+                this.color = color
+            }
+        )
+        return bitmap
+    }
+}
+
+// Create FakeViewModel for Preview
+class FakeViewModel(private val state: InsultUiState) : InsultViewModelInterface { // Implement the interface
+    override val uiState: StateFlow<InsultUiState> = MutableStateFlow(state).asStateFlow()
+}
+
+
+@Preview(showBackground = true)
+@Composable
+fun InsultDisplayPreview(
+    @PreviewParameter(InsultUiStatePreviewProvider::class) uiState: InsultUiState
+) {
+    ExcluseMyFrenchComposeTheme {
+        InsultDisplay(viewModel = FakeViewModel(uiState))
     }
 }

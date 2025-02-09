@@ -15,31 +15,37 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
-// UI State
+// UI State - moved here
 data class InsultUiState(
     val insultText: String = "",
     val imageBitmap: ImageBitmap? = null,
     val isLoading: Boolean = false,
     val error: String? = null
 )
-class InsultViewModel : ViewModel() {
 
-    // Expose UI state as a StateFlow
+// Interface for the ViewModel - Added
+interface InsultViewModelInterface {
+    val uiState: StateFlow<InsultUiState>
+}
+
+class InsultViewModel : ViewModel(), InsultViewModelInterface { // Implement interface
+
     private val _uiState = MutableStateFlow(InsultUiState(isLoading = true))
-    val uiState: StateFlow<InsultUiState> = _uiState.asStateFlow()
+    override val uiState: StateFlow<InsultUiState> = _uiState.asStateFlow()
 
-    private val apiService = InsultApiService() // Create instance of the service
+    private val apiService = InsultApiService()
     private val lenientJson = Json {
         ignoreUnknownKeys = true
         isLenient = true
     }
+
     init {
-        fetchInsultRepeatedly() // Start fetching insults when ViewModel is created
+        fetchInsultRepeatedly()
     }
 
     private fun fetchInsultRepeatedly() {
-        viewModelScope.launch { // Use viewModelScope
-            while(true) {
+        viewModelScope.launch {
+            while (true) {
                 fetchInsult()
                 delay(5000)
             }
@@ -51,18 +57,18 @@ class InsultViewModel : ViewModel() {
         try {
             val responseBodyString = apiService.fetchInsult()
             if (!responseBodyString.isNullOrBlank()) {
-                    // JSON FIXING (Regex)
-                    var fixedBody = responseBodyString.replace(Regex("\"[^\"]+\"\\s+:"), { matchResult ->
-                        matchResult.value.replace("\\s+".toRegex(), "")
-                    })
+                // JSON FIXING (Regex)
+                var fixedBody = responseBodyString.replace(Regex("\"[^\"]+\"\\s+:"), { matchResult ->
+                    matchResult.value.replace("\\s+".toRegex(), "")
+                })
 
-                    fixedBody = fixedBody.replace(Regex("\"\\s+,"), { matchResult ->
-                        "\"" + ","
-                    })
+                fixedBody = fixedBody.replace(Regex("\"\\s+,"), { matchResult ->
+                    "\"" + ","
+                })
 
-                    Log.d("API Response - MODIFIED", "Modified Body: $fixedBody")
-                    val insultResponse = lenientJson.decodeFromString<InsultResponse>(fixedBody)
-                    val decodedBitmap = ImageUtils.decodeImage(insultResponse.image.data)
+                Log.d("API Response - MODIFIED", "Modified Body: $fixedBody")
+                val insultResponse = lenientJson.decodeFromString<InsultResponse>(fixedBody)
+                val decodedBitmap = ImageUtils.decodeImage(insultResponse.image.data)
 
                 _uiState.value = InsultUiState(
                     insultText = insultResponse.insult.text.ifBlank { "No insult text provided" },
@@ -72,12 +78,12 @@ class InsultViewModel : ViewModel() {
                 )
 
             } else {
-                _uiState.value = InsultUiState(error = "Empty response body", isLoading = false) // Update UI state with error
+                _uiState.value = InsultUiState(error = "Empty response body", isLoading = false)
             }
 
         } catch (e: Exception) {
             Log.e("InsultViewModel", "Error fetching insult: ${e.message}", e)
-            _uiState.value = InsultUiState(error = "Error: ${e.message}", isLoading = false) // Update UI state with error
+            _uiState.value = InsultUiState(error = "Error: ${e.message}", isLoading = false)
         }
     }
 }
