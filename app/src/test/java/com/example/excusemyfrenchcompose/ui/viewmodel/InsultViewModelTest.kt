@@ -67,7 +67,7 @@ class InsultViewModelTest {
         val testImage = Image("test_data", "image/jpeg", 2)
         val testResponse = InsultResponse(testInsult, testImage)
         // coEvery is used for suspend functions
-        coEvery { mockApiService.fetchInsult() } returns "{\"insult\": { \"text\": \"Test Insult\" , \"index\": 1}, \"image\": { \"data\": \"test_data\", \"mimetype\" : \"image/jpeg\",  \"indexImg\": 2} }"
+        coEvery { mockApiService.fetchInsult() } returns "{\"insult\": { \"text\": \"Test Insult\", \"index\": 1}, \"image\": { \"data\": \"test_data\", \"mimetype\": \"image/jpeg\", \"indexImg\": 2} }"
 
         // Act: Call the function we want to test.
         viewModel.fetchInsult()
@@ -80,6 +80,7 @@ class InsultViewModelTest {
         assertFalse(uiState.isLoading)
         assertNull(uiState.error)
     }
+
     @Test
     fun `fetchInsult with null response updates uiState with error`() = runTest {
         coEvery { mockApiService.fetchInsult() } returns null
