@@ -1,6 +1,5 @@
 package com.example.excusemyfrenchcompose.ui.components
 
-import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +39,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import com.example.excusemyfrenchcompose.ui.viewmodel.InsultViewModelInterface
 import com.example.excusemyfrenchcompose.ui.viewmodel.InsultUiState
 import androidx.compose.ui.platform.testTag
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 
 
 @Composable
@@ -48,67 +52,84 @@ fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modi
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .padding(16.dp)
     ) {
-        // Text (at least 15% of the screen height, centered vertically and horizontally)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .defaultMinSize(minHeight = with(LocalDensity.current) { (0.15f * context.resources.displayMetrics.heightPixels).toDp() })
-                .wrapContentHeight(Alignment.CenterVertically),
-            contentAlignment = Alignment.Center
-
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(
-                text = uiState.insultText,
-                style = MaterialTheme.typography.headlineLarge,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-        HorizontalDivider()
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (uiState.isLoading) {
-            CircularProgressIndicator(modifier = Modifier.testTag("loadingIndicator"))
-        } else {
-            val imageBitmap = uiState.imageBitmap
-            // Image (constrained to 90% of remaining width/height)
+            // Text (at least 15% of the screen height, centered vertically and horizontally)
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f),
+                    .fillMaxWidth()
+                    .defaultMinSize(minHeight = with(LocalDensity.current) { (0.15f * context.resources.displayMetrics.heightPixels).toDp() })
+                    .wrapContentHeight(Alignment.CenterVertically),
                 contentAlignment = Alignment.Center
-            ) {
 
-                if (imageBitmap != null) {
-                    Image(
-                        bitmap = imageBitmap,
-                        contentDescription = "Insult Image",
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier
-                            .aspectRatio(imageBitmap.width.toFloat() / imageBitmap.height.toFloat())
-                            .fillMaxWidth(0.9f)
-                            .fillMaxHeight(0.9f)
-                    )
-                } else {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                        contentDescription = "Placeholder Image",
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier
-                            .fillMaxWidth(0.9f)
-                            .fillMaxHeight(0.9f)
-                            .aspectRatio(1f)
-                    )
-                    Text("Error displaying image or decoding Base64 data.")
+            ) {
+                Text(
+                    text = uiState.insultText,
+                    style = MaterialTheme.typography.headlineLarge,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (uiState.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.testTag("loadingIndicator"))
+            } else {
+                val imageBitmap = uiState.imageBitmap
+                // Image (constrained to 90% of remaining width/height)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+
+                    if (imageBitmap != null) {
+                        Image(
+                            bitmap = imageBitmap,
+                            contentDescription = "Insult Image",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .aspectRatio(imageBitmap.width.toFloat() / imageBitmap.height.toFloat())
+                                .fillMaxWidth(0.9f)
+                                .fillMaxHeight(0.9f)
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                            contentDescription = "Placeholder Image",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .fillMaxWidth(0.9f)
+                                .fillMaxHeight(0.9f)
+                                .aspectRatio(1f)
+                        )
+                        Text("Error displaying image or decoding Base64 data.")
+                    }
                 }
             }
+        }
+        // Mute/Unmute Button (Lower-Right Corner)
+        IconButton(
+            onClick = { viewModel.toggleMute() },
+            modifier = Modifier
+                .align(Alignment.BottomEnd) // Align to bottom-end (lower-right)
+
+        ) {
+            Icon(
+                imageVector = if (uiState.isMuted) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
+                contentDescription = if (uiState.isMuted) "Unmute" else "Mute",
+                tint = MaterialTheme.colorScheme.onSurface // Use a suitable color
+            )
         }
     }
 }
@@ -142,8 +163,14 @@ class InsultUiStatePreviewProvider : PreviewParameterProvider<InsultUiState> {
 }
 
 // Create FakeViewModel for Preview
-class FakeViewModel(private val state: InsultUiState) : InsultViewModelInterface { // Implement the interface
+class FakeViewModel(private val state: InsultUiState) : InsultViewModelInterface {
     override val uiState: StateFlow<InsultUiState> = MutableStateFlow(state).asStateFlow()
+    override fun toggleMute() {
+        // Mock implementation for preview
+    }
+    override fun speak(text: String) {
+        // Mock implementation for preview
+    }
 }
 
 

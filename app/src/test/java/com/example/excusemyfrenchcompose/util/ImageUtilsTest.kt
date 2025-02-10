@@ -24,7 +24,6 @@ class ImageUtilsTest {
 
     @Test
     fun decodeImage_validBase64_returnsBitmap() {
-        //This is no more useful in ou case.
         //val validBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP4z8DwHwAFAAH/VscvDQAAAABJRU5ErkJggg=="
         val bitmap = ImageUtils.decodeImage(null)
         assertNull(bitmap)

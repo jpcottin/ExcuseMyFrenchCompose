@@ -1,18 +1,21 @@
 package com.example.excusemyfrenchcompose.ui.components
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
-import org.junit.Rule
-import org.junit.Test
-import androidx.compose.ui.test.*
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import com.example.excusemyfrenchcompose.ui.theme.ExcluseMyFrenchComposeTheme
-import com.example.excusemyfrenchcompose.ui.viewmodel.InsultViewModel
 import com.example.excusemyfrenchcompose.ui.viewmodel.InsultUiState
+import com.example.excusemyfrenchcompose.ui.viewmodel.InsultViewModelInterface
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.Color
-import com.example.excusemyfrenchcompose.ui.viewmodel.InsultViewModelInterface // Import
+import org.junit.Rule
+import org.junit.Test
+
 
 class InsultDisplayTest {
 
@@ -111,5 +114,13 @@ class InsultDisplayTest {
 // Create FakeViewModel for Preview and testing
 class FakeViewModel(private val state: InsultUiState) : InsultViewModelInterface {
     override val uiState: StateFlow<InsultUiState> = MutableStateFlow(state).asStateFlow()
-}
 
+    override fun toggleMute() {
+        // Add a (usually empty) implementation for testing.  We don't *need*
+        // to do anything here because we're directly controlling the state
+        // in our tests.
+    }
+    override fun speak(text: String) {
+        // Add empty implementation
+    }
+}
