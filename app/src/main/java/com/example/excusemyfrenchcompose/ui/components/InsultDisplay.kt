@@ -61,7 +61,6 @@ fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modi
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Text (at least 15% of the screen height, centered vertically and horizontally)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -70,11 +69,21 @@ fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modi
                 contentAlignment = Alignment.Center
 
             ) {
-                Text(
-                    text = uiState.insultText,
-                    style = MaterialTheme.typography.headlineLarge,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
+                // Display error message if present, otherwise display insult text
+                if (uiState.error != null) {
+                    Text(
+                        text = uiState.error!!, // Use the error message from uiState
+                        style = MaterialTheme.typography.headlineLarge,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        color = Color.Red // Optionally style error text
+                    )
+                } else {
+                    Text(
+                        text = uiState.insultText,
+                        style = MaterialTheme.typography.headlineLarge,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -85,7 +94,6 @@ fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modi
                 CircularProgressIndicator(modifier = Modifier.testTag("loadingIndicator"))
             } else {
                 val imageBitmap = uiState.imageBitmap
-                // Image (constrained to 90% of remaining width/height)
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -103,7 +111,7 @@ fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modi
                                 .fillMaxWidth(0.9f)
                                 .fillMaxHeight(0.9f)
                         )
-                    } else {
+                    } else if (uiState.error == null){ // Only if is not an error
                         Image(
                             painter = painterResource(id = R.drawable.ic_launcher_foreground),
                             contentDescription = "Placeholder Image",
@@ -113,22 +121,21 @@ fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modi
                                 .fillMaxHeight(0.9f)
                                 .aspectRatio(1f)
                         )
-                        Text("Error displaying image or decoding Base64 data.")
                     }
                 }
             }
         }
-        // Mute/Unmute Button (Lower-Right Corner)
+
         IconButton(
             onClick = { viewModel.toggleMute() },
             modifier = Modifier
-                .align(Alignment.BottomEnd) // Align to bottom-end (lower-right)
+                .align(Alignment.BottomEnd)
 
         ) {
             Icon(
                 imageVector = if (uiState.isMuted) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
                 contentDescription = if (uiState.isMuted) "Unmute" else "Mute",
-                tint = MaterialTheme.colorScheme.onSurface // Use a suitable color
+                tint = MaterialTheme.colorScheme.onSurface
             )
         }
     }
