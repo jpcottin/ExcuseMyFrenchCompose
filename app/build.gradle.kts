@@ -49,30 +49,27 @@ android {
 
 dependencies {
 
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp)
-    implementation("io.coil-kt:coil-compose:2.4.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation(libs.coil.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
 
-    // Unit Tests
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation("androidx.arch.core:core-testing:2.2.0")
-    testImplementation("io.mockk:mockk:1.13.9")
+    testImplementation(libs.androidx.core.testing)
+    testImplementation(libs.mockk)
+    androidTestImplementation(libs.mockk.android)
 
-    // Robolectric (for ImageUtilsTest) - Keep this in testImplementation
-    testImplementation("org.robolectric:robolectric:4.11.1")
-    testImplementation("androidx.test:core-ktx:1.6.1")
+    testImplementation(libs.robolectric)
+    testImplementation(libs.core.ktx)
 
 
-    // UI Tests (Compose)
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.test.manifest)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation("io.mockk:mockk-android:1.13.9")
-    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
-    androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
+    androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.androidx.core.testing)
 
 
     implementation(libs.androidx.core.ktx)
@@ -83,7 +80,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation("androidx.compose.material:material-icons-extended:1.7.7")
+    implementation(libs.androidx.material.icons.extended)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
