@@ -11,7 +11,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.excusemyfrenchcompose.ui.components.InsultDisplay
-import com.example.excusemyfrenchcompose.ui.theme.ExcluseMyFrenchComposeTheme
+import com.example.excusemyfrenchcompose.ui.theme.ExcuseMyFrenchComposeTheme
 import com.example.excusemyfrenchcompose.ui.viewmodel.InsultViewModel
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.systemBars
@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
         title = ""
 
         setContent {
-            ExcluseMyFrenchComposeTheme {
+            ExcuseMyFrenchComposeTheme {
                 Surface(
                     modifier = Modifier
                         .fillMaxSize()

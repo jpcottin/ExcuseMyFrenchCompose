@@ -32,7 +32,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Color
-import com.example.excusemyfrenchcompose.ui.theme.ExcluseMyFrenchComposeTheme
+import com.example.excusemyfrenchcompose.ui.theme.ExcuseMyFrenchComposeTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -186,7 +186,7 @@ class FakeViewModel(private val state: InsultUiState) : InsultViewModelInterface
 fun InsultDisplayPreview(
     @PreviewParameter(InsultUiStatePreviewProvider::class) uiState: InsultUiState
 ) {
-    ExcluseMyFrenchComposeTheme {
+    ExcuseMyFrenchComposeTheme {
         InsultDisplay(viewModel = FakeViewModel(uiState))
     }
 }

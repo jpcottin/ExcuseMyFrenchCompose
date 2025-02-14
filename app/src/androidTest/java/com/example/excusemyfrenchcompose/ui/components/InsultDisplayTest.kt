@@ -3,7 +3,7 @@ package com.example.excusemyfrenchcompose.ui.components
 import com.example.excusemyfrenchcompose.R
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Color
-import com.example.excusemyfrenchcompose.ui.theme.ExcluseMyFrenchComposeTheme
+import com.example.excusemyfrenchcompose.ui.theme.ExcuseMyFrenchComposeTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,7 +26,7 @@ class InsultDisplayTest {
     fun insultDisplay_loadingState() {
         val fakeViewModel = FakeViewModel(InsultUiState(isLoading = true))
         composeTestRule.setContent {
-            ExcluseMyFrenchComposeTheme {
+            ExcuseMyFrenchComposeTheme {
                 InsultDisplay(viewModel = fakeViewModel)
             }
         }
@@ -42,7 +42,7 @@ class InsultDisplayTest {
         val fakeViewModel = FakeViewModel(InsultUiState(insultText = testInsult, imageBitmap = testBitmap, isLoading = false))
 
         composeTestRule.setContent {
-            ExcluseMyFrenchComposeTheme{
+            ExcuseMyFrenchComposeTheme{
                 InsultDisplay(viewModel = fakeViewModel)
             }
         }
@@ -59,7 +59,7 @@ class InsultDisplayTest {
         val fakeViewModel = FakeViewModel(InsultUiState(error = errorText, isLoading = false))
 
         composeTestRule.setContent {
-            ExcluseMyFrenchComposeTheme{
+            ExcuseMyFrenchComposeTheme{
                 InsultDisplay(viewModel = fakeViewModel)
             }
         }
@@ -76,7 +76,7 @@ class InsultDisplayTest {
         val fakeViewModel = FakeViewModel(InsultUiState(insultText = "No insult available", imageBitmap = null, error = null, isLoading = false))
 
         composeTestRule.setContent {
-            ExcluseMyFrenchComposeTheme{
+            ExcuseMyFrenchComposeTheme{
                 InsultDisplay(viewModel = fakeViewModel)
             }
         }

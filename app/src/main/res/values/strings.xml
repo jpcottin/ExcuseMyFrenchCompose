@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">ExcluseMyFrenchCompose</string>
+    <string name="app_name">ExcuseMyFrenchCompose</string>
     <string name="no_internet">No internet connection. Please check your network.</string>
     <string name="could_not_load">Could not load insult.  Please try again later.</string>
     <string name="tts_init_failed">TTS Initialization failed.</string>
