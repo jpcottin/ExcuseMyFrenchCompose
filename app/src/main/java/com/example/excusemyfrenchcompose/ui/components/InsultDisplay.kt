@@ -42,8 +42,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.VolumeOff
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+
 
 
 @Composable
@@ -133,7 +134,7 @@ fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modi
 
         ) {
             Icon(
-                imageVector = if (uiState.isMuted) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
+                imageVector = if (uiState.isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
                 contentDescription = if (uiState.isMuted) "Unmute" else "Mute",
                 tint = MaterialTheme.colorScheme.onSurface
             )
