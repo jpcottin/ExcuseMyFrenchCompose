@@ -21,6 +21,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.excusemyfrenchcompose.data.remote.InsultApiService
+import com.example.excusemyfrenchcompose.ui.viewmodel.AndroidResourceProvider
+import com.example.excusemyfrenchcompose.ui.viewmodel.ResourceProvider
 
 
 class MainActivity : ComponentActivity() {
@@ -44,7 +46,7 @@ class MainActivity : ComponentActivity() {
                     ) { innerPadding ->
                         // Use a custom ViewModelProvider.Factory
                         val viewModel: InsultViewModel = viewModel(
-                            factory = InsultViewModelFactory(application, InsultApiService())
+                            factory = InsultViewModelFactory(application, InsultApiService(), AndroidResourceProvider(application))
                         )
                         InsultDisplay(
                             viewModel = viewModel,
@@ -60,12 +62,13 @@ class MainActivity : ComponentActivity() {
 // Custom ViewModel Factory
 class InsultViewModelFactory(
     private val application: Application,
-    private val apiService: InsultApiService
+    private val apiService: InsultApiService,
+    private val resourceProvider: ResourceProvider
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(InsultViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return InsultViewModel(application, apiService) as T
+            return InsultViewModel(application, apiService, resourceProvider) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

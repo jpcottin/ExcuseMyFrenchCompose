@@ -5,4 +5,5 @@
     <string name="tts_init_failed">TTS Initialization failed.</string>
     <string name="tts_language_not_supported">French language is not supported.</string>
     <string name="image_decoding_error">Error displaying image or decoding Base64 data.</string>
+    <string name="no_insult_available">No insult available</string>
 </resources>

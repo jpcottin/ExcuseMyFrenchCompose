@@ -1,5 +1,5 @@
 [versions]
-agp = "8.10.0-alpha03"
+agp = "8.10.0-alpha05"
 # Use the Kotlin version recommended for your Compose version.  1.5.10 is a good, stable choice for older Compose.
 # If you update Compose, check the release notes for the recommended Kotlin version.
 coilCompose = "2.4.0"
@@ -21,6 +21,7 @@ mockkAndroid = "1.13.9"
 okhttp = "4.12.0"
 kotlinx-coroutines-test = "1.7.3" #Keep same version as in tests
 robolectric = "4.11.1"
+turbine = "1.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -48,6 +49,7 @@ mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockkAndroid
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-test" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

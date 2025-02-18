@@ -45,6 +45,11 @@ android {
         resources.excludes.add("META-INF/LICENSE.md")
         resources.excludes.add("META-INF/LICENSE-notice.md")
     }
+
+    tasks.withType<Test>().configureEach {
+        jvmArgs = listOf("-Xmx4g")
+    }
+
 }
 
 dependencies {
@@ -62,7 +67,7 @@ dependencies {
 
     testImplementation(libs.robolectric)
     testImplementation(libs.core.ktx)
-
+    testImplementation(libs.turbine)
 
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.test.manifest)
