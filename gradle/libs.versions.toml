@@ -1,5 +1,5 @@
 [versions]
-agp = "8.10.0-alpha03"
+agp = "8.10.0-alpha07"
 # Use the Kotlin version recommended for your Compose version.  1.5.10 is a good, stable choice for older Compose.
 # If you update Compose, check the release notes for the recommended Kotlin version.
 coilCompose = "2.4.0"
