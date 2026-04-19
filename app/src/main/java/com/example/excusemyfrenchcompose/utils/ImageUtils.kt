@@ -7,19 +7,13 @@ import java.util.Base64
 
 object ImageUtils {
     fun decodeImage(imageData: String?): Bitmap? {
+        if (imageData.isNullOrEmpty()) return null
         return try {
-            if (imageData != null && imageData.isNotEmpty()) {
-                val decodedBytes = Base64.getDecoder().decode(imageData)
-                return BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
-            } else {
-                null
-            }
-        } catch (e: IllegalArgumentException) {
-            Log.e("Image Decoding", "Base64 decoding error: ${e.message}", e)
-            return null
+            val decodedBytes = Base64.getDecoder().decode(imageData)
+            BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
         } catch (e: Exception) {
             Log.e("Image Decoding", "Image decoding error: ${e.message}", e)
-            return null
+            null
         }
     }
 }
