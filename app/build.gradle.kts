@@ -38,6 +38,14 @@ android {
     buildFeatures {
         compose = true
     }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            all { test ->
+                test.jvmArgs("-Xmx2g")
+            }
+        }
+    }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
     }
