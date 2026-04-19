@@ -176,9 +176,8 @@ class FakeViewModel(private val state: InsultUiState) : InsultViewModelInterface
     override fun toggleMute() {
         // Mock implementation for preview
     }
-    override fun speak(text: String) {
-        // Mock implementation for preview
-    }
+    override fun speak(text: String) {}
+    override fun retryFetch() {}
 }
 
 

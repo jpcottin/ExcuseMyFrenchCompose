@@ -6,7 +6,10 @@ import android.util.Log
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.viewModelScope
 import com.example.excusemyfrenchcompose.R
-import com.example.excusemyfrenchcompose.data.remote.InsultApiService
+import com.example.excusemyfrenchcompose.data.model.Insult
+import com.example.excusemyfrenchcompose.data.model.Image
+import com.example.excusemyfrenchcompose.data.model.InsultResponse
+import com.example.excusemyfrenchcompose.data.repository.InsultRepository
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.every
@@ -38,7 +41,7 @@ class InsultViewModelTest {
     private lateinit var viewModel: InsultViewModel
 
     @MockK
-    private lateinit var mockApiService: InsultApiService
+    private lateinit var mockRepository: InsultRepository
 
     @MockK(relaxed = true)
     private lateinit var mockTTS: TextToSpeech
@@ -65,7 +68,7 @@ class InsultViewModelTest {
         every { mockApplication.getString(R.string.tts_language_not_supported) } returns "French language is not supported."
         every { mockApplication.getString(R.string.image_decoding_error) } returns "Error displaying image or decoding Base64 data."
 
-        viewModel = InsultViewModel(mockApplication, mockApiService)
+        viewModel = InsultViewModel(mockApplication, mockRepository)
         viewModel.initializeTTSForTest(mockTTS)
     }
 
@@ -77,7 +80,10 @@ class InsultViewModelTest {
 
     @Test
     fun `fetchInsult successfully updates uiState`() = runTest(testDispatcher) {
-        coEvery { mockApiService.fetchInsult() } returns "{\"insult\": { \"text\": \"Test Insult\", \"index\": 1}, \"image\": { \"data\": \"test_data\", \"mimetype\": \"image/jpeg\", \"indexImg\": 2} }"
+        coEvery { mockRepository.fetchInsult() } returns InsultResponse(
+            insult = Insult(text = "Test Insult", index = 1),
+            image = Image(data = "test_data", mimetype = "image/jpeg", indexImg = 2)
+        )
 
         viewModel.fetchInsult()
 
@@ -91,7 +97,7 @@ class InsultViewModelTest {
 
     @Test
     fun `fetchInsult with null response updates uiState with error`() = runTest(testDispatcher) {
-        coEvery { mockApiService.fetchInsult() } returns null
+        coEvery { mockRepository.fetchInsult() } returns null
 
         viewModel.fetchInsult()
 
@@ -106,7 +112,7 @@ class InsultViewModelTest {
 
     @Test
     fun `fetchInsult with network error updates uiState with error`() = runTest(testDispatcher) {
-        coEvery { mockApiService.fetchInsult() } throws IOException("Network error")
+        coEvery { mockRepository.fetchInsult() } throws IOException("Network error")
 
         viewModel.fetchInsult()
 
@@ -135,7 +141,10 @@ class InsultViewModelTest {
     @Test
     fun `speak is called when unmuted and insult is fetched`() = runTest(testDispatcher) {
         val testInsultText = "Test Insult"
-        coEvery { mockApiService.fetchInsult() } returns "{\"insult\": { \"text\": \"$testInsultText\", \"index\": 1}, \"image\": { \"data\": \"test_data\", \"mimetype\": \"image/jpeg\", \"indexImg\": 2} }"
+        coEvery { mockRepository.fetchInsult() } returns InsultResponse(
+            insult = Insult(text = testInsultText, index = 1),
+            image = Image(data = "test_data", mimetype = "image/jpeg", indexImg = 2)
+        )
 
         viewModel.toggleMute()
         viewModel.fetchInsult()
@@ -148,7 +157,10 @@ class InsultViewModelTest {
     @Test
     fun `speak is not called when muted`() = runTest(testDispatcher) {
         val testInsultText = "Test Insult"
-        coEvery { mockApiService.fetchInsult() } returns "{\"insult\": { \"text\": \"$testInsultText\", \"index\": 1}, \"image\": { \"data\": \"test_data\", \"mimetype\": \"image/jpeg\", \"indexImg\": 2} }"
+        coEvery { mockRepository.fetchInsult() } returns InsultResponse(
+            insult = Insult(text = testInsultText, index = 1),
+            image = Image(data = "test_data", mimetype = "image/jpeg", indexImg = 2)
+        )
 
         viewModel.fetchInsult()
         verify(exactly = 0) { mockTTS.speak(any(), any(), any(), any()) }
@@ -165,7 +177,6 @@ class InsultViewModelTest {
     fun `TTS language not supported updates uiState with error`() = runTest(testDispatcher) {
         every { mockTTS.setLanguage(any()) } returns TextToSpeech.LANG_MISSING_DATA
 
-        // configureTTSLanguage() is private — invoke via reflection
         val method = InsultViewModel::class.java.getDeclaredMethod("configureTTSLanguage")
         method.isAccessible = true
         method.invoke(viewModel)
@@ -173,6 +184,19 @@ class InsultViewModelTest {
         val uiState = viewModel.uiState.value
         assertNotNull(uiState.error)
         assertTrue(uiState.error!!.contains("French language is not supported"))
+
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `retryFetch resets loading state and fetches`() = runTest(testDispatcher) {
+        coEvery { mockRepository.fetchInsult() } returns InsultResponse(
+            insult = Insult(text = "Retry Insult", index = 1),
+            image = Image(data = "", mimetype = "", indexImg = 0)
+        )
+
+        viewModel.retryFetch()
+        assertTrue(viewModel.uiState.value.isLoading)
 
         viewModel.viewModelScope.cancel()
     }

@@ -1,34 +1,28 @@
 package com.example.excusemyfrenchcompose
 
-import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.excusemyfrenchcompose.ui.components.InsultDisplay
 import com.example.excusemyfrenchcompose.ui.theme.ExcuseMyFrenchComposeTheme
 import com.example.excusemyfrenchcompose.ui.viewmodel.InsultViewModel
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material3.Surface
-import androidx.compose.material3.MaterialTheme
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import com.example.excusemyfrenchcompose.data.remote.InsultApiService
-
+import com.example.excusemyfrenchcompose.ui.viewmodel.InsultViewModelFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-        title = ""
 
         setContent {
             ExcuseMyFrenchComposeTheme {
@@ -40,11 +34,10 @@ class MainActivity : ComponentActivity() {
                 ) {
                     Scaffold(
                         modifier = Modifier.fillMaxSize(),
-                        topBar = { /* Intentionally left empty */ }
+                        topBar = {}
                     ) { innerPadding ->
-                        // Use a custom ViewModelProvider.Factory
                         val viewModel: InsultViewModel = viewModel(
-                            factory = InsultViewModelFactory(application, InsultApiService())
+                            factory = InsultViewModelFactory(application)
                         )
                         InsultDisplay(
                             viewModel = viewModel,
@@ -54,19 +47,5 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-}
-
-// Custom ViewModel Factory
-class InsultViewModelFactory(
-    private val application: Application,
-    private val apiService: InsultApiService
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(InsultViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return InsultViewModel(application, apiService) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
