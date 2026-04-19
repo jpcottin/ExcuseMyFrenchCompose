@@ -1,8 +1,11 @@
 package com.example.excusemyfrenchcompose.ui.components
 
+import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.defaultMinSize
@@ -14,179 +17,276 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
-import com.example.excusemyfrenchcompose.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import com.example.excusemyfrenchcompose.R
 import com.example.excusemyfrenchcompose.ui.theme.ExcuseMyFrenchComposeTheme
+import com.example.excusemyfrenchcompose.ui.viewmodel.InsultUiState
+import com.example.excusemyfrenchcompose.ui.viewmodel.InsultViewModelInterface
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import com.example.excusemyfrenchcompose.ui.viewmodel.InsultViewModelInterface
-import com.example.excusemyfrenchcompose.ui.viewmodel.InsultUiState
-import androidx.compose.ui.platform.testTag
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.VolumeOff
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
 
-
+private val WIDE_LAYOUT_THRESHOLD = 600.dp
+private const val IMAGE_MAX_FRACTION = 0.9f
 
 @Composable
 fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modifier) {
-
     val uiState by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
+        if (maxWidth < WIDE_LAYOUT_THRESHOLD) {
+            PortraitLayout(uiState = uiState, onToggleMute = viewModel::toggleMute)
+        } else {
+            WideLayout(uiState = uiState, onToggleMute = viewModel::toggleMute)
+        }
+    }
+}
+
+@Composable
+private fun PortraitLayout(uiState: InsultUiState, onToggleMute: () -> Unit) {
+    val context = LocalContext.current
+
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(
+            InsultTextSection(
+                uiState = uiState,
                 modifier = Modifier
                     .fillMaxWidth()
                     .defaultMinSize(minHeight = with(LocalDensity.current) { (0.15f * context.resources.displayMetrics.heightPixels).toDp() })
-                    .wrapContentHeight(Alignment.CenterVertically),
-                contentAlignment = Alignment.Center
-
-            ) {
-                // Display error message if present, otherwise display insult text
-                if (uiState.error != null) {
-                    Text(
-                        text = uiState.error!!, // Use the error message from uiState
-                        style = MaterialTheme.typography.headlineLarge,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        color = Color.Red // Optionally style error text
-                    )
-                } else {
-                    Text(
-                        text = uiState.insultText,
-                        style = MaterialTheme.typography.headlineLarge,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
-                }
-            }
+                    .wrapContentHeight(Alignment.CenterVertically)
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
             HorizontalDivider()
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (uiState.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.testTag("loadingIndicator"))
-            } else {
-                val imageBitmap = uiState.imageBitmap
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-
-                    if (imageBitmap != null) {
-                        Image(
-                            bitmap = imageBitmap,
-                            contentDescription = "Insult Image",
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier
-                                .aspectRatio(imageBitmap.width.toFloat() / imageBitmap.height.toFloat())
-                                .fillMaxWidth(0.9f)
-                                .fillMaxHeight(0.9f)
-                        )
-                    } else if (uiState.error == null){ // Only if is not an error
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                            contentDescription = "Placeholder Image",
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier
-                                .fillMaxWidth(0.9f)
-                                .fillMaxHeight(0.9f)
-                                .aspectRatio(1f)
-                        )
-                    }
-                }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                InsultMediaSection(uiState = uiState)
             }
         }
 
-        IconButton(
-            onClick = { viewModel.toggleMute() },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
+        MuteButton(
+            isMuted = uiState.isMuted,
+            onToggleMute = onToggleMute,
+            modifier = Modifier.align(Alignment.BottomEnd)
+        )
+    }
+}
 
+@Composable
+private fun WideLayout(uiState: InsultUiState, onToggleMute: () -> Unit) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = if (uiState.isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
-                contentDescription = if (uiState.isMuted) "Unmute" else "Mute",
-                tint = MaterialTheme.colorScheme.onSurface
+            InsultTextSection(
+                uiState = uiState,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .wrapContentHeight(Alignment.CenterVertically)
+                    .padding(end = 8.dp)
+            )
+
+            VerticalDivider()
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .padding(start = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                InsultMediaSection(uiState = uiState)
+            }
+        }
+
+        MuteButton(
+            isMuted = uiState.isMuted,
+            onToggleMute = onToggleMute,
+            modifier = Modifier.align(Alignment.BottomEnd)
+        )
+    }
+}
+
+@Composable
+private fun InsultTextSection(uiState: InsultUiState, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        if (uiState.error != null) {
+            Text(
+                text = uiState.error,
+                style = MaterialTheme.typography.headlineLarge,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.testTag("errorText")
+            )
+        } else {
+            Text(
+                text = uiState.insultText,
+                style = MaterialTheme.typography.headlineLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.testTag("insultText")
             )
         }
     }
 }
-class InsultUiStatePreviewProvider : PreviewParameterProvider<InsultUiState> {
-    override val values: Sequence<InsultUiState> = sequenceOf(
-        InsultUiState(isLoading = true), // Loading state
-        InsultUiState(insultText = "Test Insult", imageBitmap = createTestBitmap(), isLoading = false), // Success state
-        InsultUiState(insultText = "Another Test Insult", imageBitmap = createTestBitmap(Color.Red), isLoading = false), // Another success
-        InsultUiState(error = "Error: Network connection failed", isLoading = false), // Error state
-        InsultUiState(insultText = "", imageBitmap = null, error = null, isLoading = false) // No insult, no image
 
-    )
+@Composable
+private fun InsultMediaSection(uiState: InsultUiState) {
+    val loadingDescription = stringResource(R.string.loading)
 
-    // Helper function to create a simple ImageBitmap for preview purposes.
-    private fun createTestBitmap(color: Color = Color.Blue): ImageBitmap {
-        val width = 200
-        val height = 100
-        val bitmap = ImageBitmap(width, height, androidx.compose.ui.graphics.ImageBitmapConfig.Argb8888)
-        val canvas = androidx.compose.ui.graphics.Canvas(bitmap)
-        canvas.drawRect(
-            left = 0f,
-            top = 0f,
-            right = width.toFloat(),
-            bottom = height.toFloat(),
-            paint = androidx.compose.ui.graphics.Paint().apply {
-                this.color = color
-            }
+    if (uiState.isLoading) {
+        CircularProgressIndicator(
+            modifier = Modifier
+                .testTag("loadingIndicator")
+                .semantics { contentDescription = loadingDescription }
         )
-        return bitmap
+    } else {
+        val imageBitmap = uiState.imageBitmap
+        if (imageBitmap != null) {
+            Image(
+                bitmap = imageBitmap,
+                contentDescription = stringResource(R.string.insult_image),
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .aspectRatio(imageBitmap.width.toFloat() / imageBitmap.height.toFloat())
+                    .fillMaxWidth(IMAGE_MAX_FRACTION)
+                    .fillMaxHeight(IMAGE_MAX_FRACTION)
+            )
+        } else if (uiState.error == null) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                contentDescription = stringResource(R.string.placeholder_image),
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxWidth(IMAGE_MAX_FRACTION)
+                    .fillMaxHeight(IMAGE_MAX_FRACTION)
+                    .aspectRatio(1f)
+            )
+        }
     }
 }
 
-// Create FakeViewModel for Preview
+@Composable
+private fun MuteButton(isMuted: Boolean, onToggleMute: () -> Unit, modifier: Modifier = Modifier) {
+    IconButton(
+        onClick = onToggleMute,
+        modifier = modifier.testTag("muteButton")
+    ) {
+        Icon(
+            imageVector = if (isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+            contentDescription = if (isMuted) stringResource(R.string.unmute) else stringResource(R.string.mute),
+            tint = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+// --- Preview helpers ---
+
+class InsultUiStatePreviewProvider : PreviewParameterProvider<InsultUiState> {
+    override val values: Sequence<InsultUiState> = sequenceOf(
+        InsultUiState(isLoading = true),
+        InsultUiState(insultText = "Espèce d'idiot !", imageBitmap = createPreviewBitmap(), isLoading = false),
+        InsultUiState(error = "Error: Network connection failed", isLoading = false),
+        InsultUiState(insultText = "", imageBitmap = null, error = null, isLoading = false)
+    )
+}
+
+private fun createPreviewBitmap(color: Color = Color.Blue): ImageBitmap {
+    val bitmap = ImageBitmap(200, 100, androidx.compose.ui.graphics.ImageBitmapConfig.Argb8888)
+    val canvas = androidx.compose.ui.graphics.Canvas(bitmap)
+    canvas.drawRect(0f, 0f, 200f, 100f, androidx.compose.ui.graphics.Paint().apply { this.color = color })
+    return bitmap
+}
+
 class FakeViewModel(private val state: InsultUiState) : InsultViewModelInterface {
     override val uiState: StateFlow<InsultUiState> = MutableStateFlow(state).asStateFlow()
-    override fun toggleMute() {
-        // Mock implementation for preview
-    }
+    override fun toggleMute() {}
     override fun speak(text: String) {}
     override fun retryFetch() {}
 }
 
-
-@Preview(showBackground = true)
+@Preview(showBackground = true, name = "Phone Portrait")
 @Composable
 fun InsultDisplayPreview(
     @PreviewParameter(InsultUiStatePreviewProvider::class) uiState: InsultUiState
 ) {
     ExcuseMyFrenchComposeTheme {
         InsultDisplay(viewModel = FakeViewModel(uiState))
+    }
+}
+
+@Preview(showBackground = true, name = "Tablet Wide", device = "spec:width=1280dp,height=800dp,dpi=240")
+@Composable
+fun InsultDisplayTabletPreview() {
+    ExcuseMyFrenchComposeTheme {
+        InsultDisplay(viewModel = FakeViewModel(InsultUiState(insultText = "Espèce d'idiot !", imageBitmap = createPreviewBitmap(), isLoading = false)))
+    }
+}
+
+@Preview(showBackground = true, name = "Dark Mode", uiMode = UI_MODE_NIGHT_YES)
+@Composable
+fun InsultDisplayDarkPreview() {
+    ExcuseMyFrenchComposeTheme {
+        InsultDisplay(viewModel = FakeViewModel(InsultUiState(insultText = "Espèce d'abruti !", isLoading = false)))
+    }
+}
+
+@Preview(showBackground = true, name = "Loading State")
+@Composable
+fun InsultDisplayLoadingPreview() {
+    ExcuseMyFrenchComposeTheme {
+        InsultDisplay(viewModel = FakeViewModel(InsultUiState(isLoading = true)))
+    }
+}
+
+@Preview(showBackground = true, name = "Error State")
+@Composable
+fun InsultDisplayErrorPreview() {
+    ExcuseMyFrenchComposeTheme {
+        InsultDisplay(viewModel = FakeViewModel(InsultUiState(error = "No internet connection. Please check your network.", isLoading = false)))
     }
 }
