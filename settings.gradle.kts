@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ExcluseMyFrenchCompose"
+rootProject.name = "ExcuseMyFrenchCompose"
 include(":app")
