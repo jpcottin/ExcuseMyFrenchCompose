@@ -109,7 +109,7 @@ class FakeViewModel(private val state: InsultUiState) : InsultViewModelInterface
     override fun toggleMute() {
         // Add a (usually empty) implementation for testing.
     }
-    override fun speak(text: String) {
-        // Add empty implementation
-    }
+    override fun speak(text: String) {}
+
+    override fun retryFetch() {}
 }

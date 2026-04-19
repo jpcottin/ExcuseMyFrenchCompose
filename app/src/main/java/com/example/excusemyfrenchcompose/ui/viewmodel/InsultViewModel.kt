@@ -3,13 +3,13 @@ package com.example.excusemyfrenchcompose.ui.viewmodel
 import android.app.Application
 import android.speech.tts.TextToSpeech
 import android.util.Log
+import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.excusemyfrenchcompose.R
-import com.example.excusemyfrenchcompose.data.model.InsultResponse
-import com.example.excusemyfrenchcompose.data.remote.InsultApiService
+import com.example.excusemyfrenchcompose.data.repository.InsultRepository
 import com.example.excusemyfrenchcompose.util.ImageUtils
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,9 +18,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
-import java.util.Locale
 import java.io.IOException
+import java.util.Locale
 
 data class InsultUiState(
     val insultText: String = "",
@@ -32,7 +31,7 @@ data class InsultUiState(
 
 class InsultViewModel(
     application: Application,
-    private val apiService: InsultApiService = InsultApiService()
+    private val repository: InsultRepository
 ) : AndroidViewModel(application), InsultViewModelInterface {
 
     companion object {
@@ -43,10 +42,6 @@ class InsultViewModel(
 
     private val _uiState = MutableStateFlow(InsultUiState(isLoading = true))
     override val uiState: StateFlow<InsultUiState> = _uiState.asStateFlow()
-
-    private val json = Json {
-        ignoreUnknownKeys = true
-    }
 
     private var tts: TextToSpeech? = null
 
@@ -63,22 +58,51 @@ class InsultViewModel(
         }
     }
 
-    override fun toggleMute() {
-        _uiState.update { currentState ->
-            currentState.copy(isMuted = !currentState.isMuted)
+    suspend fun fetchInsult() {
+        try {
+            val response = repository.fetchInsult()
+            if (response != null) {
+                val bitmap = decodeImageSafely(response.image.data)
+                val text = response.insult.text.ifBlank { "No insult text provided" }
+                updateUIWithSuccess(text, bitmap)
+                speak(text)
+            } else {
+                handleError(getString(R.string.could_not_load))
+            }
+        } catch (e: IOException) {
+            Log.e(TAG, "Network error: ${e.message}", e)
+            handleError(getString(R.string.no_internet))
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching insult: ${e.message}", e)
+            handleError(getString(R.string.could_not_load))
         }
+    }
 
+    override fun toggleMute() {
+        _uiState.update { it.copy(isMuted = !it.isMuted) }
         if (!_uiState.value.isMuted && tts == null) {
             initializeTTS()
         }
     }
 
+    override fun speak(text: String) {
+        if (_uiState.value.isMuted) return
+        if (tts == null) initializeTTS()
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, TTS_UTTERANCE_ID)
+    }
+
+    override fun retryFetch() {
+        _uiState.update { it.copy(isLoading = true, error = null) }
+        viewModelScope.launch { fetchInsult() }
+    }
+
     private fun initializeTTS() {
+        if (tts != null) return
         tts = TextToSpeech(getApplication()) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 configureTTSLanguage()
             } else {
-                handleTTSError(getApplication<Application>().getString(R.string.tts_init_failed))
+                handleTTSError(getString(R.string.tts_init_failed))
             }
         }
     }
@@ -86,56 +110,13 @@ class InsultViewModel(
     private fun configureTTSLanguage() {
         val result = tts?.setLanguage(Locale.FRANCE)
         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            handleTTSError(getApplication<Application>().getString(R.string.tts_language_not_supported))
+            handleTTSError(getString(R.string.tts_language_not_supported))
         }
     }
 
-    private fun handleTTSError(errorMessage: String) {
-        Log.e(TAG, "TTS Error: $errorMessage")
-        _uiState.update { currentState ->
-            currentState.copy(error = errorMessage)
-        }
-    }
-
-    override fun speak(text: String) {
-        if (_uiState.value.isMuted) return
-
-        if (tts == null) {
-            initializeTTS()
-        }
-
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, TTS_UTTERANCE_ID)
-    }
-
-    suspend fun fetchInsult() {
-        try {
-            val responseBodyString = apiService.fetchInsult()
-            if (!responseBodyString.isNullOrBlank()) {
-                processInsultResponse(responseBodyString)
-            } else {
-                handleError(getApplication<Application>().getString(R.string.could_not_load))
-            }
-        } catch (e: IOException) {
-            Log.e(TAG, "Network error: ${e.message}", e)
-            handleError(getApplication<Application>().getString(R.string.no_internet))
-        } catch (e: Exception) {
-            Log.e(TAG, "Error fetching insult: ${e.message}", e)
-            handleError(getApplication<Application>().getString(R.string.could_not_load))
-        }
-    }
-
-    private fun processInsultResponse(responseBodyString: String) {
-        try {
-            val insultResponse = json.decodeFromString<InsultResponse>(responseBodyString)
-            val decodedBitmap = decodeImageSafely(insultResponse.image.data)
-            val insultText = insultResponse.insult.text.ifBlank { "No insult text provided" }
-
-            updateUIWithSuccess(insultText, decodedBitmap)
-            speak(insultText)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error processing response: ${e.message}", e)
-            handleError(getApplication<Application>().getString(R.string.could_not_load))
-        }
+    private fun handleTTSError(message: String) {
+        Log.e(TAG, "TTS error: $message")
+        _uiState.update { it.copy(error = message) }
     }
 
     private fun decodeImageSafely(imageData: String): ImageBitmap? {
@@ -143,39 +124,20 @@ class InsultViewModel(
             ImageUtils.decodeImage(imageData)?.asImageBitmap()
         } catch (e: IllegalArgumentException) {
             Log.e(TAG, "Image decoding error: ${e.message}", e)
-            handleError(getApplication<Application>().getString(R.string.image_decoding_error))
+            handleError(getString(R.string.image_decoding_error))
             null
         }
     }
 
     private fun updateUIWithSuccess(insultText: String, imageBitmap: ImageBitmap?) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                insultText = insultText,
-                imageBitmap = imageBitmap,
-                isLoading = false,
-                error = null
-            )
-        }
+        _uiState.update { it.copy(insultText = insultText, imageBitmap = imageBitmap, isLoading = false, error = null) }
     }
 
-    private fun handleError(errorMessage: String) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                error = errorMessage,
-                isLoading = false
-            )
-        }
+    private fun handleError(message: String) {
+        _uiState.update { it.copy(error = message, isLoading = false) }
     }
 
-    fun retryFetch() {
-        _uiState.update { currentState ->
-            currentState.copy(isLoading = true, error = null)
-        }
-        viewModelScope.launch {
-            fetchInsult()
-        }
-    }
+    private fun getString(@StringRes resId: Int): String = getApplication<Application>().getString(resId)
 
     override fun onCleared() {
         super.onCleared()
