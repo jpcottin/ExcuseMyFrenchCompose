@@ -58,6 +58,7 @@ class InsultViewModel(
         }
     }
 
+    @androidx.annotation.VisibleForTesting
     suspend fun fetchInsult() {
         try {
             val response = repository.fetchInsult()
