@@ -1,7 +1,6 @@
 package com.example.excusemyfrenchcompose.ui.viewmodel
 
 import android.app.Application
-import android.speech.tts.TextToSpeech
 import android.util.Log
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.viewModelScope
@@ -10,6 +9,7 @@ import com.example.excusemyfrenchcompose.data.model.Insult
 import com.example.excusemyfrenchcompose.data.model.Image
 import com.example.excusemyfrenchcompose.data.model.InsultResponse
 import com.example.excusemyfrenchcompose.data.repository.InsultRepository
+import com.example.excusemyfrenchcompose.service.TtsService
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.every
@@ -44,7 +44,7 @@ class InsultViewModelTest {
     private lateinit var mockRepository: InsultRepository
 
     @MockK(relaxed = true)
-    private lateinit var mockTTS: TextToSpeech
+    private lateinit var mockTtsService: TtsService
 
     @MockK
     private lateinit var mockApplication: Application
@@ -68,8 +68,7 @@ class InsultViewModelTest {
         every { mockApplication.getString(R.string.tts_language_not_supported) } returns "French language is not supported."
         every { mockApplication.getString(R.string.image_decoding_error) } returns "Error displaying image or decoding Base64 data."
 
-        viewModel = InsultViewModel(mockApplication, mockRepository)
-        viewModel.initializeTTSForTest(mockTTS)
+        viewModel = InsultViewModel(mockApplication, mockRepository, mockTtsService)
     }
 
     @After
@@ -149,7 +148,7 @@ class InsultViewModelTest {
         viewModel.toggleMute()
         viewModel.fetchInsult()
 
-        verify { mockTTS.speak(testInsultText, TextToSpeech.QUEUE_FLUSH, null, "insult_speech") }
+        verify { mockTtsService.speak(testInsultText) }
 
         viewModel.viewModelScope.cancel()
     }
@@ -163,27 +162,29 @@ class InsultViewModelTest {
         )
 
         viewModel.fetchInsult()
-        verify(exactly = 0) { mockTTS.speak(any(), any(), any(), any()) }
+        verify(exactly = 0) { mockTtsService.speak(any()) }
 
         viewModel.toggleMute()
         viewModel.toggleMute()
         viewModel.fetchInsult()
-        verify(exactly = 0) { mockTTS.speak(any(), any(), any(), any()) }
+        verify(exactly = 0) { mockTtsService.speak(any()) }
 
         viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `TTS language not supported updates uiState with error`() = runTest(testDispatcher) {
-        every { mockTTS.setLanguage(any()) } returns TextToSpeech.LANG_MISSING_DATA
+    fun `TTS initialization error updates uiState with error`() = runTest(testDispatcher) {
+        val errorMessage = "French language is not supported."
+        every { mockTtsService.initialize(any()) } answers {
+            val callback = it.invocation.args[0] as (String) -> Unit
+            callback(errorMessage)
+        }
 
-        val method = InsultViewModel::class.java.getDeclaredMethod("configureTTSLanguage")
-        method.isAccessible = true
-        method.invoke(viewModel)
+        viewModel.toggleMute() // This triggers ttsService.initialize
 
         val uiState = viewModel.uiState.value
         assertNotNull(uiState.error)
-        assertTrue(uiState.error!!.contains("French language is not supported"))
+        assertTrue(uiState.error!!.contains(errorMessage))
 
         viewModel.viewModelScope.cancel()
     }
@@ -199,11 +200,5 @@ class InsultViewModelTest {
         assertTrue(viewModel.uiState.value.isLoading)
 
         viewModel.viewModelScope.cancel()
-    }
-
-    private fun InsultViewModel.initializeTTSForTest(mockTTS: TextToSpeech) {
-        val field = this.javaClass.getDeclaredField("tts")
-        field.isAccessible = true
-        field.set(this, mockTTS)
     }
 }

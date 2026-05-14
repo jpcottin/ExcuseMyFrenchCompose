@@ -11,6 +11,8 @@ The app consists of a single screen that displays:
 *   A horizontal divider between the text and image.
 *   A loading indicator while data is being fetched.
 *   An error message if data fetching fails.
+*   A Text-To-Speech (TTS) feature that reads the insult aloud in French.
+*   A mute/unmute toggle button.
 
 The text is displayed prominently, taking up at least 15% of the screen height, and is centered both horizontally and vertically. The image is displayed below the divider, maintaining its aspect ratio and fitting within 90% of the available width or height.
 
@@ -21,8 +23,9 @@ The text is displayed prominently, taking up at least 15% of the screen height, 
 *   **Networking:** OkHttp
 *   **JSON Parsing:** kotlinx.serialization
 *   **Asynchronous Programming:** Kotlin Coroutines (with `StateFlow`)
-*   **Dependency Injection:** Manual dependency injection (constructor injection)
+*   **Dependency Injection:** Manual dependency injection (constructor injection for Repository and `TtsService`)
 *   **ViewModel:** `AndroidViewModel` (for access to application context)
+*   **Text-To-Speech:** Android `TextToSpeech` API abstracted behind a `TtsService` interface.
 *   **Testing:**
     *   Unit Tests: JUnit 4, MockK, Robolectric, `kotlinx-coroutines-test`
     *   UI Tests: `androidx.compose.ui:ui-test-junit4`
