@@ -13,8 +13,9 @@ class InsultViewModelFactory(
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(InsultViewModel::class.java)) {
+            val ttsService = com.example.excusemyfrenchcompose.service.TtsServiceImpl(application)
             @Suppress("UNCHECKED_CAST")
-            return InsultViewModel(application, repository) as T
+            return InsultViewModel(application, repository, ttsService) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
