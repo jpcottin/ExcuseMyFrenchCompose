@@ -4,14 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.excusemyfrenchcompose.ui.components.InsultDisplay
@@ -26,24 +21,18 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             ExcuseMyFrenchComposeTheme {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .windowInsetsPadding(WindowInsets.systemBars),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    Scaffold(
-                        modifier = Modifier.fillMaxSize(),
-                        topBar = {}
-                    ) { innerPadding ->
-                        val viewModel: InsultViewModel = viewModel(
-                            factory = InsultViewModelFactory(application)
-                        )
-                        InsultDisplay(
-                            viewModel = viewModel,
-                            modifier = Modifier.padding(innerPadding)
-                        )
-                    }
+                // Scaffold draws edge-to-edge and reports the system bar insets via innerPadding,
+                // so the content stays clear of the status and navigation bars without extra handling.
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    val viewModel: InsultViewModel = viewModel(
+                        factory = InsultViewModelFactory(application)
+                    )
+                    InsultDisplay(
+                        viewModel = viewModel,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                    )
                 }
             }
         }

@@ -22,6 +22,9 @@ internal class FakeViewModel(private val state: InsultUiState) : InsultViewModel
     override fun toggleMute() {}
     override fun speak(text: String) {}
     override fun retryFetch() {}
+    override fun togglePause() {}
+    override fun fetchNext() {}
+    override suspend fun autoRefresh() {}
 }
 
 internal class InsultUiStatePreviewProvider : PreviewParameterProvider<InsultUiState> {

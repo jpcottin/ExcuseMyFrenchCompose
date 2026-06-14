@@ -1,6 +1,7 @@
 package com.example.excusemyfrenchcompose.ui.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -24,12 +26,14 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -40,6 +44,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.excusemyfrenchcompose.R
 import com.example.excusemyfrenchcompose.ui.viewmodel.InsultUiState
 import com.example.excusemyfrenchcompose.ui.viewmodel.InsultViewModelInterface
@@ -49,7 +57,16 @@ private const val IMAGE_MAX_FRACTION = 0.9f
 
 @Composable
 fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modifier) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Drive the auto-refresh loop only while the screen is at least STARTED, so polling
+    // (and TTS) pauses automatically when the app is in the background.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(viewModel, lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewModel.autoRefresh()
+        }
+    }
 
     BoxWithConstraints(
         modifier = modifier
@@ -57,15 +74,33 @@ fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modi
             .padding(16.dp)
     ) {
         if (maxWidth < WIDE_LAYOUT_THRESHOLD) {
-            PortraitLayout(uiState = uiState, onToggleMute = viewModel::toggleMute)
+            PortraitLayout(
+                uiState = uiState,
+                onRetry = viewModel::retryFetch,
+                onToggleMute = viewModel::toggleMute,
+                onTogglePause = viewModel::togglePause,
+                onNext = viewModel::fetchNext
+            )
         } else {
-            WideLayout(uiState = uiState, onToggleMute = viewModel::toggleMute)
+            WideLayout(
+                uiState = uiState,
+                onRetry = viewModel::retryFetch,
+                onToggleMute = viewModel::toggleMute,
+                onTogglePause = viewModel::togglePause,
+                onNext = viewModel::fetchNext
+            )
         }
     }
 }
 
 @Composable
-private fun PortraitLayout(uiState: InsultUiState, onToggleMute: () -> Unit) {
+private fun PortraitLayout(
+    uiState: InsultUiState,
+    onRetry: () -> Unit,
+    onToggleMute: () -> Unit,
+    onTogglePause: () -> Unit,
+    onNext: () -> Unit
+) {
     val context = LocalContext.current
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -75,6 +110,7 @@ private fun PortraitLayout(uiState: InsultUiState, onToggleMute: () -> Unit) {
         ) {
             InsultTextSection(
                 uiState = uiState,
+                onRetry = onRetry,
                 modifier = Modifier
                     .fillMaxWidth()
                     .defaultMinSize(minHeight = with(LocalDensity.current) { (0.15f * context.resources.displayMetrics.heightPixels).toDp() })
@@ -95,16 +131,24 @@ private fun PortraitLayout(uiState: InsultUiState, onToggleMute: () -> Unit) {
             }
         }
 
-        MuteButton(
-            isMuted = uiState.isMuted,
+        ControlBar(
+            uiState = uiState,
             onToggleMute = onToggleMute,
+            onTogglePause = onTogglePause,
+            onNext = onNext,
             modifier = Modifier.align(Alignment.BottomEnd)
         )
     }
 }
 
 @Composable
-private fun WideLayout(uiState: InsultUiState, onToggleMute: () -> Unit) {
+private fun WideLayout(
+    uiState: InsultUiState,
+    onRetry: () -> Unit,
+    onToggleMute: () -> Unit,
+    onTogglePause: () -> Unit,
+    onNext: () -> Unit
+) {
     Box(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.fillMaxSize(),
@@ -112,6 +156,7 @@ private fun WideLayout(uiState: InsultUiState, onToggleMute: () -> Unit) {
         ) {
             InsultTextSection(
                 uiState = uiState,
+                onRetry = onRetry,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
@@ -132,28 +177,39 @@ private fun WideLayout(uiState: InsultUiState, onToggleMute: () -> Unit) {
             }
         }
 
-        MuteButton(
-            isMuted = uiState.isMuted,
+        ControlBar(
+            uiState = uiState,
             onToggleMute = onToggleMute,
+            onTogglePause = onTogglePause,
+            onNext = onNext,
             modifier = Modifier.align(Alignment.BottomEnd)
         )
     }
 }
 
 @Composable
-private fun InsultTextSection(uiState: InsultUiState, modifier: Modifier = Modifier) {
+private fun InsultTextSection(uiState: InsultUiState, onRetry: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
         if (uiState.error != null) {
-            Text(
-                text = uiState.error,
-                style = MaterialTheme.typography.headlineLarge,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.testTag("errorText")
-            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = uiState.error,
+                    style = MaterialTheme.typography.headlineLarge,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.testTag("errorText")
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = onRetry,
+                    modifier = Modifier.testTag("retryButton")
+                ) {
+                    Text(text = stringResource(R.string.retry))
+                }
+            }
         } else {
             Text(
                 text = uiState.insultText,
@@ -202,6 +258,45 @@ private fun InsultMediaSection(uiState: InsultUiState) {
 }
 
 @Composable
+private fun ControlBar(
+    uiState: InsultUiState,
+    onToggleMute: () -> Unit,
+    onTogglePause: () -> Unit,
+    onNext: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(
+            onClick = onTogglePause,
+            modifier = Modifier.testTag("pauseButton")
+        ) {
+            Icon(
+                imageVector = if (uiState.isPaused) Icons.Filled.PlayArrow else Icons.Filled.Pause,
+                contentDescription = if (uiState.isPaused) stringResource(R.string.resume) else stringResource(R.string.pause),
+                tint = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        IconButton(
+            onClick = onNext,
+            modifier = Modifier.testTag("nextButton")
+        ) {
+            Icon(
+                imageVector = Icons.Filled.SkipNext,
+                contentDescription = stringResource(R.string.next),
+                tint = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        MuteButton(isMuted = uiState.isMuted, onToggleMute = onToggleMute)
+    }
+}
+
+@Composable
 private fun MuteButton(isMuted: Boolean, onToggleMute: () -> Unit, modifier: Modifier = Modifier) {
     IconButton(
         onClick = onToggleMute,
@@ -214,4 +309,3 @@ private fun MuteButton(isMuted: Boolean, onToggleMute: () -> Unit, modifier: Mod
         )
     }
 }
-

@@ -9,6 +9,7 @@ import com.example.excusemyfrenchcompose.data.model.Insult
 import com.example.excusemyfrenchcompose.data.model.Image
 import com.example.excusemyfrenchcompose.data.model.InsultResponse
 import com.example.excusemyfrenchcompose.data.repository.InsultRepository
+import com.example.excusemyfrenchcompose.data.settings.SettingsRepository
 import com.example.excusemyfrenchcompose.service.TtsService
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
@@ -18,6 +19,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -46,6 +48,9 @@ class InsultViewModelTest {
     @MockK(relaxed = true)
     private lateinit var mockTtsService: TtsService
 
+    @MockK(relaxed = true)
+    private lateinit var mockSettings: SettingsRepository
+
     @MockK
     private lateinit var mockApplication: Application
 
@@ -68,7 +73,9 @@ class InsultViewModelTest {
         every { mockApplication.getString(R.string.tts_language_not_supported) } returns "French language is not supported."
         every { mockApplication.getString(R.string.image_decoding_error) } returns "Error displaying image or decoding Base64 data."
 
-        viewModel = InsultViewModel(mockApplication, mockRepository, mockTtsService)
+        every { mockSettings.isMuted } returns flowOf(true)
+
+        viewModel = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings)
     }
 
     @After
@@ -176,8 +183,7 @@ class InsultViewModelTest {
     fun `TTS initialization error updates uiState with error`() = runTest(testDispatcher) {
         val errorMessage = "French language is not supported."
         every { mockTtsService.initialize(any()) } answers {
-            val callback = it.invocation.args[0] as (String) -> Unit
-            callback(errorMessage)
+            firstArg<(String) -> Unit>().invoke(errorMessage)
         }
 
         viewModel.toggleMute() // This triggers ttsService.initialize
