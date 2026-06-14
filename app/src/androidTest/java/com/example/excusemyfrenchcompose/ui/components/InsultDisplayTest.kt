@@ -98,6 +98,9 @@ class InsultDisplayTest {
             override fun toggleMute() { mutableState.value = mutableState.value.copy(isMuted = !mutableState.value.isMuted) }
             override fun speak(text: String) {}
             override fun retryFetch() {}
+            override fun togglePause() {}
+            override fun fetchNext() {}
+            override suspend fun autoRefresh() {}
         }
 
         composeTestRule.setContent {
@@ -124,4 +127,7 @@ private class FakeViewModel(private val state: InsultUiState) : InsultViewModelI
     override fun toggleMute() {}
     override fun speak(text: String) {}
     override fun retryFetch() {}
+    override fun togglePause() {}
+    override fun fetchNext() {}
+    override suspend fun autoRefresh() {}
 }

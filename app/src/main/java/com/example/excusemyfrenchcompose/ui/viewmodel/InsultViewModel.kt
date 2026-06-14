@@ -10,12 +10,15 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.excusemyfrenchcompose.R
 import com.example.excusemyfrenchcompose.data.repository.InsultRepository
+import com.example.excusemyfrenchcompose.data.settings.SettingsRepository
 import com.example.excusemyfrenchcompose.service.TtsService
 import com.example.excusemyfrenchcompose.util.ImageUtils
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -26,33 +29,43 @@ data class InsultUiState(
     val imageBitmap: ImageBitmap? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
-    val isMuted: Boolean = true
+    val isMuted: Boolean = true,
+    val isPaused: Boolean = false
 )
 
 class InsultViewModel(
     application: Application,
     private val repository: InsultRepository,
-    private val ttsService: TtsService
+    private val ttsService: TtsService,
+    private val settings: SettingsRepository
 ) : AndroidViewModel(application), InsultViewModelInterface {
 
     companion object {
-        private const val REFRESH_INTERVAL = 5000L
+        private const val REFRESH_INTERVAL = 10000L
         private const val TAG = "InsultViewModel"
     }
 
     private val _uiState = MutableStateFlow(InsultUiState(isLoading = true))
     override val uiState: StateFlow<InsultUiState> = _uiState.asStateFlow()
 
+    // Once the user toggles mute, their explicit choice wins over the persisted value loaded async.
+    private var muteOverridden = false
+
     init {
-        fetchInsultRepeatedly()
+        viewModelScope.launch {
+            val savedMuted = settings.isMuted.first()
+            if (!muteOverridden) {
+                _uiState.update { it.copy(isMuted = savedMuted) }
+            }
+        }
     }
 
-    private fun fetchInsultRepeatedly() {
-        viewModelScope.launch {
-            while (isActive) {
+    override suspend fun autoRefresh() {
+        while (currentCoroutineContext().isActive) {
+            if (!_uiState.value.isPaused) {
                 fetchInsult()
-                delay(REFRESH_INTERVAL)
             }
+            delay(REFRESH_INTERVAL)
         }
     }
 
@@ -78,12 +91,24 @@ class InsultViewModel(
     }
 
     override fun toggleMute() {
-        _uiState.update { it.copy(isMuted = !it.isMuted) }
-        if (!_uiState.value.isMuted) {
+        muteOverridden = true
+        val newMuted = !_uiState.value.isMuted
+        _uiState.update { it.copy(isMuted = newMuted) }
+        viewModelScope.launch { settings.setMuted(newMuted) }
+        if (!newMuted) {
             ttsService.initialize { errorMessage ->
                 handleTTSError(errorMessage)
             }
         }
+    }
+
+    override fun togglePause() {
+        _uiState.update { it.copy(isPaused = !it.isPaused) }
+    }
+
+    override fun fetchNext() {
+        _uiState.update { it.copy(isLoading = true, error = null) }
+        viewModelScope.launch { fetchInsult() }
     }
 
     override fun speak(text: String) {

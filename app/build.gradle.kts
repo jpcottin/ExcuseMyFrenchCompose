@@ -10,13 +10,19 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.excusemyfrenchcompose"
+        applicationId = "io.github.jpcottin.excusemyfrench"
         minSdk = 30
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField(
+            "String",
+            "INSULT_API_URL",
+            "\"https://excusemyfrench.herokuapp.com/api/v1/img\""
+        )
     }
 
     buildTypes {
@@ -37,6 +43,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     testOptions {
         unitTests {
@@ -55,8 +62,9 @@ android {
 dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp)
-    implementation(libs.coil.compose)
+    implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

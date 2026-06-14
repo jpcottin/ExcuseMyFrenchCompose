@@ -1,6 +1,7 @@
 package com.example.excusemyfrenchcompose.data.remote
 
 import android.util.Log
+import com.example.excusemyfrenchcompose.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.concurrent.TimeUnit
@@ -11,11 +12,13 @@ interface InsultApiService {
     suspend fun fetchInsult(): String?
 }
 
-class InsultApiServiceImpl : InsultApiService {
+class InsultApiServiceImpl(
+    private val url: String = BuildConfig.INSULT_API_URL
+) : InsultApiService {
 
     override suspend fun fetchInsult(): String? {
         val request = Request.Builder()
-            .url("https://excusemyfrench.herokuapp.com/api/v1/img")
+            .url(url)
             .build()
 
         return withContext(Dispatchers.IO) {
