@@ -1,11 +1,11 @@
 [versions]
-agp = "8.10.1"
-# Use the Kotlin version recommended for your Compose version.  1.5.10 is a good, stable choice for older Compose.
-# If you update Compose, check the release notes for the recommended Kotlin version.
+agp = "9.2.1"
+# Kotlin version used for the Compose and serialization compiler plugins, and forced for
+# AGP's built-in Kotlin via a buildscript classpath in the root build file so they stay aligned.
+kotlin = "2.4.0"
 coreKtxVersion = "1.6.1"
 datastore = "1.1.1"
 coreTesting = "2.2.0"
-kotlin = "2.1.21"
 coreKtx = "1.16.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
@@ -52,6 +52,5 @@ robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectr
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
