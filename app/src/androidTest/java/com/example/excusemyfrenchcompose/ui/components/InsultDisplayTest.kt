@@ -3,6 +3,8 @@ package com.example.excusemyfrenchcompose.ui.components
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -100,6 +102,7 @@ class InsultDisplayTest {
             override fun retryFetch() {}
             override fun togglePause() {}
             override fun fetchNext() {}
+            override fun setInsultLevel(level: Int) {}
             override suspend fun autoRefresh() {}
         }
 
@@ -112,6 +115,44 @@ class InsultDisplayTest {
         composeTestRule.onNodeWithContentDescription(context.getString(R.string.unmute)).assertIsDisplayed()
         composeTestRule.onNodeWithTag("muteButton").performClick()
         composeTestRule.onNodeWithContentDescription(context.getString(R.string.mute)).assertIsDisplayed()
+    }
+
+    @Test
+    fun insultDisplay_levelSelector_showsAllLevelsWithDefaultSelected() {
+        composeTestRule.setContent {
+            ExcuseMyFrenchComposeTheme {
+                InsultDisplay(viewModel = FakeViewModel(InsultUiState(insultLevel = 1, isLoading = false)))
+            }
+        }
+
+        composeTestRule.onNodeWithTag("levelButton1").assertIsDisplayed().assertIsSelected()
+        composeTestRule.onNodeWithTag("levelButton2").assertIsDisplayed().assertIsNotSelected()
+        composeTestRule.onNodeWithTag("levelButton3").assertIsDisplayed().assertIsNotSelected()
+    }
+
+    @Test
+    fun insultDisplay_levelSelector_selectsClickedLevel() {
+        val mutableState = MutableStateFlow(InsultUiState(insultLevel = 1, isLoading = false))
+        val fakeViewModel = object : InsultViewModelInterface {
+            override val uiState: StateFlow<InsultUiState> = mutableState.asStateFlow()
+            override fun toggleMute() {}
+            override fun speak(text: String) {}
+            override fun retryFetch() {}
+            override fun togglePause() {}
+            override fun fetchNext() {}
+            override fun setInsultLevel(level: Int) { mutableState.value = mutableState.value.copy(insultLevel = level) }
+            override suspend fun autoRefresh() {}
+        }
+
+        composeTestRule.setContent {
+            ExcuseMyFrenchComposeTheme {
+                InsultDisplay(viewModel = fakeViewModel)
+            }
+        }
+
+        composeTestRule.onNodeWithTag("levelButton3").performClick()
+        composeTestRule.onNodeWithTag("levelButton3").assertIsSelected()
+        composeTestRule.onNodeWithTag("levelButton1").assertIsNotSelected()
     }
 
     private fun createTestBitmap(color: Color = Color.Blue): ImageBitmap {
@@ -129,5 +170,6 @@ private class FakeViewModel(private val state: InsultUiState) : InsultViewModelI
     override fun retryFetch() {}
     override fun togglePause() {}
     override fun fetchNext() {}
+    override fun setInsultLevel(level: Int) {}
     override suspend fun autoRefresh() {}
 }

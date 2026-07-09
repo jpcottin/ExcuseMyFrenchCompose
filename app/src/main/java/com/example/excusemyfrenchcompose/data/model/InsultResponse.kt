@@ -11,7 +11,8 @@ data class InsultResponse(
 @Serializable
 data class Insult(
     val text: String = "No insult available",
-    val index: Int = -1
+    val index: Int = -1,
+    val level: Int = -1
 )
 
 @Serializable

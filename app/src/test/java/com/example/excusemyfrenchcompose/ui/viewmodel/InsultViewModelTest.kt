@@ -13,6 +13,7 @@ import com.example.excusemyfrenchcompose.data.settings.SettingsRepository
 import com.example.excusemyfrenchcompose.service.TtsService
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockkStatic
@@ -74,6 +75,7 @@ class InsultViewModelTest {
         every { mockApplication.getString(R.string.image_decoding_error) } returns "Error displaying image or decoding Base64 data."
 
         every { mockSettings.isMuted } returns flowOf(true)
+        every { mockSettings.insultLevel } returns flowOf(1)
 
         viewModel = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings)
     }
@@ -86,7 +88,7 @@ class InsultViewModelTest {
 
     @Test
     fun `fetchInsult successfully updates uiState`() = runTest(testDispatcher) {
-        coEvery { mockRepository.fetchInsult() } returns InsultResponse(
+        coEvery { mockRepository.fetchInsult(any()) } returns InsultResponse(
             insult = Insult(text = "Test Insult", index = 1),
             image = Image(data = "test_data", mimetype = "image/jpeg", indexImg = 2)
         )
@@ -103,7 +105,7 @@ class InsultViewModelTest {
 
     @Test
     fun `fetchInsult with null response updates uiState with error`() = runTest(testDispatcher) {
-        coEvery { mockRepository.fetchInsult() } returns null
+        coEvery { mockRepository.fetchInsult(any()) } returns null
 
         viewModel.fetchInsult()
 
@@ -118,7 +120,7 @@ class InsultViewModelTest {
 
     @Test
     fun `fetchInsult with network error updates uiState with error`() = runTest(testDispatcher) {
-        coEvery { mockRepository.fetchInsult() } throws IOException("Network error")
+        coEvery { mockRepository.fetchInsult(any()) } throws IOException("Network error")
 
         viewModel.fetchInsult()
 
@@ -147,7 +149,7 @@ class InsultViewModelTest {
     @Test
     fun `speak is called when unmuted and insult is fetched`() = runTest(testDispatcher) {
         val testInsultText = "Test Insult"
-        coEvery { mockRepository.fetchInsult() } returns InsultResponse(
+        coEvery { mockRepository.fetchInsult(any()) } returns InsultResponse(
             insult = Insult(text = testInsultText, index = 1),
             image = Image(data = "test_data", mimetype = "image/jpeg", indexImg = 2)
         )
@@ -163,7 +165,7 @@ class InsultViewModelTest {
     @Test
     fun `speak is not called when muted`() = runTest(testDispatcher) {
         val testInsultText = "Test Insult"
-        coEvery { mockRepository.fetchInsult() } returns InsultResponse(
+        coEvery { mockRepository.fetchInsult(any()) } returns InsultResponse(
             insult = Insult(text = testInsultText, index = 1),
             image = Image(data = "test_data", mimetype = "image/jpeg", indexImg = 2)
         )
@@ -197,13 +199,76 @@ class InsultViewModelTest {
 
     @Test
     fun `retryFetch resets loading state and fetches`() = runTest(testDispatcher) {
-        coEvery { mockRepository.fetchInsult() } returns InsultResponse(
+        coEvery { mockRepository.fetchInsult(any()) } returns InsultResponse(
             insult = Insult(text = "Retry Insult", index = 1),
             image = Image(data = "", mimetype = "", indexImg = 0)
         )
 
         viewModel.retryFetch()
         assertTrue(viewModel.uiState.value.isLoading)
+
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `persisted level is loaded on init`() = runTest(testDispatcher) {
+        every { mockSettings.insultLevel } returns flowOf(3)
+
+        val vm = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(3, vm.uiState.value.insultLevel)
+
+        vm.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `setInsultLevel updates state, persists and refetches with new level`() = runTest(testDispatcher) {
+        coEvery { mockRepository.fetchInsult(any()) } returns InsultResponse(
+            insult = Insult(text = "Level 2 Insult", index = 1, level = 2),
+            image = Image(data = "", mimetype = "", indexImg = 0)
+        )
+
+        viewModel.setInsultLevel(2)
+
+        assertEquals(2, viewModel.uiState.value.insultLevel)
+        assertTrue(viewModel.uiState.value.isLoading)
+
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { mockSettings.setInsultLevel(2) }
+        coVerify { mockRepository.fetchInsult(2) }
+        assertEquals("Level 2 Insult", viewModel.uiState.value.insultText)
+        assertFalse(viewModel.uiState.value.isLoading)
+
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `setInsultLevel with unchanged level does not refetch`() = runTest(testDispatcher) {
+        testDispatcher.scheduler.advanceUntilIdle()
+        val currentLevel = viewModel.uiState.value.insultLevel
+
+        viewModel.setInsultLevel(currentLevel)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 0) { mockRepository.fetchInsult(any()) }
+        coVerify(exactly = 0) { mockSettings.setInsultLevel(any()) }
+
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `fetchInsult uses current level`() = runTest(testDispatcher) {
+        coEvery { mockRepository.fetchInsult(any()) } returns InsultResponse(
+            insult = Insult(text = "Test Insult", index = 1, level = 1),
+            image = Image(data = "", mimetype = "", indexImg = 0)
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.fetchInsult()
+
+        coVerify { mockRepository.fetchInsult(viewModel.uiState.value.insultLevel) }
 
         viewModel.viewModelScope.cancel()
     }

@@ -6,7 +6,7 @@ import com.example.excusemyfrenchcompose.data.remote.InsultApiService
 import kotlinx.serialization.json.Json
 
 interface InsultRepository {
-    suspend fun fetchInsult(): InsultResponse?
+    suspend fun fetchInsult(level: Int): InsultResponse?
 }
 
 class InsultRepositoryImpl(
@@ -15,8 +15,8 @@ class InsultRepositoryImpl(
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    override suspend fun fetchInsult(): InsultResponse? {
-        val body = apiService.fetchInsult() ?: return null
+    override suspend fun fetchInsult(level: Int): InsultResponse? {
+        val body = apiService.fetchInsult(level) ?: return null
         return try {
             json.decodeFromString<InsultResponse>(body)
         } catch (e: Exception) {

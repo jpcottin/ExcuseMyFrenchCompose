@@ -10,6 +10,9 @@ interface InsultViewModelInterface {
     fun togglePause()
     fun fetchNext()
 
+    /** Sets the maximum insult level (1 = family-friendly, 2 = vulgar, 3 = offensive) and refetches. */
+    fun setInsultLevel(level: Int)
+
     /**
      * Runs the auto-refresh loop until the calling coroutine is cancelled. Intended to be
      * driven from the UI inside `repeatOnLifecycle` so polling pauses while the app is not visible.

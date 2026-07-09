@@ -10,6 +10,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.excusemyfrenchcompose.R
 import com.example.excusemyfrenchcompose.data.repository.InsultRepository
+import com.example.excusemyfrenchcompose.data.settings.DataStoreSettingsRepository
 import com.example.excusemyfrenchcompose.data.settings.SettingsRepository
 import com.example.excusemyfrenchcompose.service.TtsService
 import com.example.excusemyfrenchcompose.util.ImageUtils
@@ -30,7 +31,8 @@ data class InsultUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val isMuted: Boolean = true,
-    val isPaused: Boolean = false
+    val isPaused: Boolean = false,
+    val insultLevel: Int = DataStoreSettingsRepository.DEFAULT_LEVEL
 )
 
 class InsultViewModel(
@@ -51,11 +53,20 @@ class InsultViewModel(
     // Once the user toggles mute, their explicit choice wins over the persisted value loaded async.
     private var muteOverridden = false
 
+    // Same for the insult level picker.
+    private var levelOverridden = false
+
     init {
         viewModelScope.launch {
             val savedMuted = settings.isMuted.first()
             if (!muteOverridden) {
                 _uiState.update { it.copy(isMuted = savedMuted) }
+            }
+        }
+        viewModelScope.launch {
+            val savedLevel = settings.insultLevel.first()
+            if (!levelOverridden) {
+                _uiState.update { it.copy(insultLevel = savedLevel) }
             }
         }
     }
@@ -72,7 +83,7 @@ class InsultViewModel(
     @androidx.annotation.VisibleForTesting
     suspend fun fetchInsult() {
         try {
-            val response = repository.fetchInsult()
+            val response = repository.fetchInsult(_uiState.value.insultLevel)
             if (response != null) {
                 val bitmap = decodeImageSafely(response.image.data)
                 val text = response.insult.text.ifBlank { "No insult text provided" }
@@ -104,6 +115,16 @@ class InsultViewModel(
 
     override fun togglePause() {
         _uiState.update { it.copy(isPaused = !it.isPaused) }
+    }
+
+    override fun setInsultLevel(level: Int) {
+        levelOverridden = true
+        if (level == _uiState.value.insultLevel) return
+        _uiState.update { it.copy(insultLevel = level, isLoading = true, error = null) }
+        viewModelScope.launch {
+            settings.setInsultLevel(level)
+            fetchInsult()
+        }
     }
 
     override fun fetchNext() {
