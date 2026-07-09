@@ -21,6 +21,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material.icons.Icons
@@ -79,7 +82,8 @@ fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modi
                 onRetry = viewModel::retryFetch,
                 onToggleMute = viewModel::toggleMute,
                 onTogglePause = viewModel::togglePause,
-                onNext = viewModel::fetchNext
+                onNext = viewModel::fetchNext,
+                onSetLevel = viewModel::setInsultLevel
             )
         } else {
             WideLayout(
@@ -87,7 +91,8 @@ fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modi
                 onRetry = viewModel::retryFetch,
                 onToggleMute = viewModel::toggleMute,
                 onTogglePause = viewModel::togglePause,
-                onNext = viewModel::fetchNext
+                onNext = viewModel::fetchNext,
+                onSetLevel = viewModel::setInsultLevel
             )
         }
     }
@@ -99,7 +104,8 @@ private fun PortraitLayout(
     onRetry: () -> Unit,
     onToggleMute: () -> Unit,
     onTogglePause: () -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
+    onSetLevel: (Int) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -136,6 +142,7 @@ private fun PortraitLayout(
             onToggleMute = onToggleMute,
             onTogglePause = onTogglePause,
             onNext = onNext,
+            onSetLevel = onSetLevel,
             modifier = Modifier.align(Alignment.BottomEnd)
         )
     }
@@ -147,7 +154,8 @@ private fun WideLayout(
     onRetry: () -> Unit,
     onToggleMute: () -> Unit,
     onTogglePause: () -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
+    onSetLevel: (Int) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -182,6 +190,7 @@ private fun WideLayout(
             onToggleMute = onToggleMute,
             onTogglePause = onTogglePause,
             onNext = onNext,
+            onSetLevel = onSetLevel,
             modifier = Modifier.align(Alignment.BottomEnd)
         )
     }
@@ -263,6 +272,7 @@ private fun ControlBar(
     onToggleMute: () -> Unit,
     onTogglePause: () -> Unit,
     onNext: () -> Unit,
+    onSetLevel: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -270,6 +280,8 @@ private fun ControlBar(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        LevelSelector(selectedLevel = uiState.insultLevel, onSetLevel = onSetLevel)
+
         IconButton(
             onClick = onTogglePause,
             modifier = Modifier.testTag("pauseButton")
@@ -293,6 +305,32 @@ private fun ControlBar(
         }
 
         MuteButton(isMuted = uiState.isMuted, onToggleMute = onToggleMute)
+    }
+}
+
+@Composable
+private fun LevelSelector(selectedLevel: Int, onSetLevel: (Int) -> Unit, modifier: Modifier = Modifier) {
+    val descriptions = listOf(
+        stringResource(R.string.level_1),
+        stringResource(R.string.level_2),
+        stringResource(R.string.level_3)
+    )
+    SingleChoiceSegmentedButtonRow(modifier = modifier) {
+        (1..3).forEach { level ->
+            val description = descriptions[level - 1]
+            SegmentedButton(
+                selected = selectedLevel == level,
+                onClick = { onSetLevel(level) },
+                shape = SegmentedButtonDefaults.itemShape(index = level - 1, count = 3),
+                // Skip the default checkmark icon to keep the control compact.
+                icon = {},
+                modifier = Modifier
+                    .testTag("levelButton$level")
+                    .semantics { contentDescription = description }
+            ) {
+                Text(text = level.toString())
+            }
+        }
     }
 }
 

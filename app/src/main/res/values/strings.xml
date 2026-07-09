@@ -14,4 +14,7 @@
     <string name="pause">Pause auto-refresh</string>
     <string name="resume">Resume auto-refresh</string>
     <string name="next">Next insult</string>
+    <string name="level_1">Level 1: family-friendly insults only</string>
+    <string name="level_2">Level 2: includes vulgar insults</string>
+    <string name="level_3">Level 3: includes offensive insults</string>
 </resources>

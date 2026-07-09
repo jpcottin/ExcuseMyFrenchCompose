@@ -24,6 +24,7 @@ internal class FakeViewModel(private val state: InsultUiState) : InsultViewModel
     override fun retryFetch() {}
     override fun togglePause() {}
     override fun fetchNext() {}
+    override fun setInsultLevel(level: Int) {}
     override suspend fun autoRefresh() {}
 }
 
