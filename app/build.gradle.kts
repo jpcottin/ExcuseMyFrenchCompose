@@ -2,11 +2,15 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.screenshot)
 }
 
 android {
     namespace = "com.example.excusemyfrenchcompose"
     compileSdk = 35
+
+    // Required by the Compose Preview Screenshot Testing plugin (screenshotTest source set)
+    experimentalProperties["android.experimental.enableScreenshotTest"] = true
 
     defaultConfig {
         applicationId = "io.github.jpcottin.excusemyfrench"
@@ -71,6 +75,9 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
+
+    screenshotTestImplementation(libs.androidx.ui.tooling)
+    screenshotTestImplementation(libs.screenshot.validation.api)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
