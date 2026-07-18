@@ -38,14 +38,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -57,6 +56,7 @@ import com.example.excusemyfrenchcompose.ui.viewmodel.InsultViewModelInterface
 
 private val WIDE_LAYOUT_THRESHOLD = 600.dp
 private const val IMAGE_MAX_FRACTION = 0.9f
+private const val TEXT_MIN_HEIGHT_FRACTION = 0.15f
 
 @Composable
 fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modifier) {
@@ -79,6 +79,7 @@ fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modi
         if (maxWidth < WIDE_LAYOUT_THRESHOLD) {
             PortraitLayout(
                 uiState = uiState,
+                minTextHeight = maxHeight * TEXT_MIN_HEIGHT_FRACTION,
                 onRetry = viewModel::retryFetch,
                 onToggleMute = viewModel::toggleMute,
                 onTogglePause = viewModel::togglePause,
@@ -101,14 +102,13 @@ fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modi
 @Composable
 private fun PortraitLayout(
     uiState: InsultUiState,
+    minTextHeight: Dp,
     onRetry: () -> Unit,
     onToggleMute: () -> Unit,
     onTogglePause: () -> Unit,
     onNext: () -> Unit,
     onSetLevel: (Int) -> Unit
 ) {
-    val context = LocalContext.current
-
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -119,7 +119,7 @@ private fun PortraitLayout(
                 onRetry = onRetry,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .defaultMinSize(minHeight = with(LocalDensity.current) { (0.15f * context.resources.displayMetrics.heightPixels).toDp() })
+                    .defaultMinSize(minHeight = minTextHeight)
                     .wrapContentHeight(Alignment.CenterVertically)
             )
 

@@ -8,14 +8,15 @@ The app consists of a single screen that displays:
 
 *   A randomly selected French insult (text).
 *   An associated image.
-*   A horizontal divider between the text and image.
+*   A divider between the text and image.
 *   A loading indicator while data is being fetched.
 *   An error message if data fetching fails.
 *   A Text-To-Speech (TTS) feature that reads the insult aloud in French.
 *   A mute/unmute toggle button.
+*   Pause/resume and next buttons to control the automatic insult refresh.
 *   A level selector (1/2/3) to choose the maximum insult level: 1 = family-friendly, 2 = adds vulgar, 3 = adds offensive. Levels are cumulative, the choice is persisted across launches, and the app defaults to level 1 on first launch.
 
-The text is displayed prominently, taking up at least 15% of the screen height, and is centered both horizontally and vertically. The image is displayed below the divider, maintaining its aspect ratio and fitting within 90% of the available width or height.
+The layout adapts to the window size. In windows narrower than 600dp (phones in portrait), the text is displayed above the image with a horizontal divider, and the text area takes up at least 15% of the window height. In wider windows (tablets, unfolded foldables, split-screen, and desktop windows), the text and image are shown side by side with a vertical divider. In both layouts the text is centered and the image keeps its aspect ratio while fitting within 90% of the available space.
 
 ## Technologies Used
 
@@ -31,6 +32,7 @@ The text is displayed prominently, taking up at least 15% of the screen height, 
 *   **Testing:**
     *   Unit Tests: JUnit 4, MockK, Robolectric, `kotlinx-coroutines-test`
     *   UI Tests: `androidx.compose.ui:ui-test-junit4`
+    *   Screenshot Tests: Compose Preview Screenshot Testing (reference images for phone, foldable, tablet, and desktop; run `./gradlew validateDebugScreenshotTest` to check, `updateDebugScreenshotTest` to re-record)
 *   **Image Loading:** `painterResource` (for placeholder), and manual Base64 decoding and Bitmap conversion for fetched images.
 
 ## API
