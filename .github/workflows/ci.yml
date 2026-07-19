@@ -55,7 +55,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: screenshot-test-report
-          path: app/build/reports/screenshotTest/
+          path: |
+            app/build/reports/screenshotTest/
+            app/build/outputs/screenshotTest-results/
 
   release-build:
     name: Release Build (R8)
@@ -77,16 +79,23 @@ jobs:
   instrumented-tests:
     name: Instrumented Tests (API ${{ matrix.api-level }})
     runs-on: ubuntu-latest
+    # The API 37.0 leg runs on a preview (16 KB page-size) system image — the only
+    # API 37 image available on hosted runners — so it must not gate PRs.
+    continue-on-error: ${{ matrix.experimental || false }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - api-level: 34
+            target: google_apis
             gpu: swiftshader_indirect
           - api-level: 36
+            target: google_apis
             gpu: swiftshader_indirect
-          - api-level: 37
+          - api-level: '37.0'
+            target: google_apis_ps16k
             gpu: auto
+            experimental: true
     steps:
       - uses: actions/checkout@v7
 
@@ -117,6 +126,7 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}
+          target: ${{ matrix.target }}
           arch: x86_64
           profile: pixel_6
           force-avd-creation: false
@@ -128,6 +138,7 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}
+          target: ${{ matrix.target }}
           arch: x86_64
           profile: pixel_6
           force-avd-creation: false
