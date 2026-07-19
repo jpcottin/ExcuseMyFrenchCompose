@@ -27,7 +27,14 @@ data class FrenchInsult(
 // compiler only generates the required factory when the no-arg constructor is the ONLY
 // constructor, so tests inject a fake through the property instead of a constructor.
 class InsultFunctions {
-    internal var repository: InsultRepository = InsultRepositoryImpl(InsultApiServiceImpl())
+    private var _repository: InsultRepository? = null
+
+    // Lazily created so tests that inject a fake never build the real OkHttp-backed stack.
+    internal var repository: InsultRepository
+        get() = _repository ?: InsultRepositoryImpl(InsultApiServiceImpl()).also { _repository = it }
+        set(value) {
+            _repository = value
+        }
 
     /**
      * Fetch a random French insult whose level does not exceed [maxLevel].

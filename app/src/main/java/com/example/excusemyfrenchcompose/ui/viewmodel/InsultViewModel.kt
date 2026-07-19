@@ -1,7 +1,6 @@
 package com.example.excusemyfrenchcompose.ui.viewmodel
 
 import android.app.Application
-import android.speech.tts.TextToSpeech
 import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.ImageBitmap
@@ -14,6 +13,7 @@ import com.example.excusemyfrenchcompose.data.settings.DataStoreSettingsReposito
 import com.example.excusemyfrenchcompose.data.settings.SettingsRepository
 import com.example.excusemyfrenchcompose.service.TtsService
 import com.example.excusemyfrenchcompose.util.ImageUtils
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.IOException
 
 data class InsultUiState(
@@ -32,7 +34,9 @@ data class InsultUiState(
     val error: String? = null,
     val isMuted: Boolean = true,
     val isPaused: Boolean = false,
-    val insultLevel: Int = DataStoreSettingsRepository.DEFAULT_LEVEL
+    val insultLevel: Int = DataStoreSettingsRepository.DEFAULT_LEVEL,
+    // TTS problems must not hide the fetched content, so they are reported separately from [error].
+    val ttsError: String? = null
 )
 
 class InsultViewModel(
@@ -80,18 +84,24 @@ class InsultViewModel(
         }
     }
 
+    // Serializes fetches so a user action (next, retry, level change) can't interleave with an
+    // in-flight auto-refresh and let a slower, older response overwrite a newer one.
+    private val fetchMutex = Mutex()
+
     @androidx.annotation.VisibleForTesting
-    suspend fun fetchInsult() {
+    suspend fun fetchInsult() = fetchMutex.withLock {
         try {
             val response = repository.fetchInsult(_uiState.value.insultLevel)
             if (response != null) {
-                val bitmap = decodeImageSafely(response.image.data)
+                val bitmap = ImageUtils.decodeImage(response.image.data)?.asImageBitmap()
                 val text = response.insult.text.ifBlank { "No insult text provided" }
                 updateUIWithSuccess(text, bitmap)
                 speak(text)
             } else {
                 handleError(getString(R.string.could_not_load))
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: IOException) {
             Log.e(TAG, "Network error: ${e.message}", e)
             handleError(getString(R.string.no_internet))
@@ -104,7 +114,7 @@ class InsultViewModel(
     override fun toggleMute() {
         muteOverridden = true
         val newMuted = !_uiState.value.isMuted
-        _uiState.update { it.copy(isMuted = newMuted) }
+        _uiState.update { it.copy(isMuted = newMuted, ttsError = null) }
         viewModelScope.launch { settings.setMuted(newMuted) }
         if (!newMuted) {
             ttsService.initialize { errorMessage ->
@@ -147,17 +157,7 @@ class InsultViewModel(
 
     private fun handleTTSError(message: String) {
         Log.e(TAG, "TTS error: $message")
-        _uiState.update { it.copy(error = message) }
-    }
-
-    private fun decodeImageSafely(imageData: String): ImageBitmap? {
-        return try {
-            ImageUtils.decodeImage(imageData)?.asImageBitmap()
-        } catch (e: IllegalArgumentException) {
-            Log.e(TAG, "Image decoding error: ${e.message}", e)
-            handleError(getString(R.string.image_decoding_error))
-            null
-        }
+        _uiState.update { it.copy(ttsError = message) }
     }
 
     private fun updateUIWithSuccess(insultText: String, imageBitmap: ImageBitmap?) {

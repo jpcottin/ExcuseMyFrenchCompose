@@ -137,6 +137,18 @@ private fun PortraitLayout(
             }
         }
 
+        // TTS problems are shown as a small unobtrusive note; the insult stays visible.
+        uiState.ttsError?.let { ttsError ->
+            Text(
+                text = ttsError,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .testTag("ttsError")
+            )
+        }
+
         ControlBar(
             uiState = uiState,
             onToggleMute = onToggleMute,
@@ -183,6 +195,18 @@ private fun WideLayout(
             ) {
                 InsultMediaSection(uiState = uiState)
             }
+        }
+
+        // TTS problems are shown as a small unobtrusive note; the insult stays visible.
+        uiState.ttsError?.let { ttsError ->
+            Text(
+                text = ttsError,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .testTag("ttsError")
+            )
         }
 
         ControlBar(

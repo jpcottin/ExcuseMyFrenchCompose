@@ -13,11 +13,12 @@ The app consists of a single screen that displays:
 *   A divider between the text and image.
 *   A loading indicator while data is being fetched.
 *   An error message if data fetching fails.
-*   A Text-To-Speech (TTS) feature that reads the insult aloud in French.
+*   A Text-To-Speech (TTS) feature that reads the insult aloud in French. TTS problems are shown as a small note without hiding the insult.
 *   A mute/unmute toggle button.
 *   Pause/resume and next buttons to control the automatic insult refresh.
 *   A level selector (1/2/3) to choose the maximum insult level: 1 = family-friendly, 2 = adds vulgar, 3 = adds offensive. Levels are cumulative, the choice is persisted across launches, and the app defaults to level 1 on first launch.
 *   An AppFunction (`getFrenchInsult`) that lets on-device AI agents and the Android system fetch an insult without opening the app UI (Android 16+).
+*   An adaptive launcher icon (beret-wearing robot on the French flag) with a monochrome layer for Android 13+ themed home screens.
 
 The layout adapts to the window size. In windows narrower than 600dp (phones in portrait), the text is displayed above the image with a horizontal divider, and the text area takes up at least 15% of the window height. In wider windows (tablets, unfolded foldables, split-screen, and desktop windows), the text and image are shown side by side with a vertical divider. In both layouts the text is centered and the image keeps its aspect ratio while fitting within 90% of the available space.
 
@@ -38,6 +39,10 @@ The layout adapts to the window size. In windows narrower than 600dp (phones in 
     *   UI Tests: `androidx.compose.ui:ui-test-junit4`
     *   Screenshot Tests: Compose Preview Screenshot Testing (reference images for phone, foldable, tablet, and desktop; run `./gradlew validateDebugScreenshotTest` to check, `updateDebugScreenshotTest` to re-record)
 *   **Image Loading:** `painterResource` (for placeholder), and manual Base64 decoding and Bitmap conversion for fetched images.
+
+## Continuous Integration
+
+Every push and pull request to `main` runs seven GitHub Actions jobs: unit tests, screenshot validation against the committed reference images, a minified release build (guarding the R8 configuration), and instrumented tests on an emulator matrix — API 34 and 36 (blocking) plus the API 37.0 and 37.1 16 KB page-size preview images (non-blocking). Dependabot keeps GitHub Actions and Gradle dependencies up to date with weekly PRs.
 
 ## AppFunctions
 
