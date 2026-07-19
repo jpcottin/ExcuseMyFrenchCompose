@@ -86,15 +86,27 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - api-level: 34
-            target: google_apis
+          # Stock x86_64 legs — these gate (blocking). No target: runs the
+          # 'default' (AOSP) image via the fallback below.
+          - api-level: '34'
             gpu: swiftshader_indirect
-          - api-level: 36
-            target: google_apis
+          - api-level: '36'
             gpu: swiftshader_indirect
+          # API 37.0 is only available as a 16 KB page-size preview image on
+          # hosted runners; it needs more RAM/cores to boot reliably.
           - api-level: '37.0'
             target: google_apis_ps16k
             gpu: auto
+            ram-size: 4096M
+            cores: 4
+            disk-size: 8192M
+            experimental: true
+          - api-level: '37.1'
+            target: google_apis_ps16k
+            gpu: auto
+            ram-size: 4096M
+            cores: 4
+            disk-size: 8192M
             experimental: true
     steps:
       - uses: actions/checkout@v7
@@ -119,16 +131,21 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-api-${{ matrix.api-level }}
+          # Include the target so a config change can never resurrect a stale AVD
+          # pointing at a system image that is no longer installed.
+          key: avd-api-${{ matrix.api-level }}-${{ matrix.target || 'default' }}
 
       - name: Create AVD and generate snapshot for caching
         if: steps.avd-cache.outputs.cache-hit != 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}
-          target: ${{ matrix.target }}
+          target: ${{ matrix.target || 'default' }}
           arch: x86_64
           profile: pixel_6
+          ram-size: ${{ matrix.ram-size }}
+          cores: ${{ matrix.cores || 2 }}
+          disk-size: ${{ matrix.disk-size }}
           force-avd-creation: false
           emulator-options: -no-window -gpu ${{ matrix.gpu }} -noaudio -no-boot-anim -camera-back none
           disable-animations: false
@@ -138,9 +155,12 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}
-          target: ${{ matrix.target }}
+          target: ${{ matrix.target || 'default' }}
           arch: x86_64
           profile: pixel_6
+          ram-size: ${{ matrix.ram-size }}
+          cores: ${{ matrix.cores || 2 }}
+          disk-size: ${{ matrix.disk-size }}
           force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu ${{ matrix.gpu }} -noaudio -no-boot-anim -verbose -debug-metrics -metrics-collection -show-kernel
           disable-animations: true
