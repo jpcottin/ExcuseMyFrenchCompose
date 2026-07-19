@@ -10,6 +10,7 @@
     <string name="loading">Loading</string>
     <string name="insult_image">Insult Image</string>
     <string name="placeholder_image">Placeholder Image</string>
+    <string name="app_functions_description">Fetch random French insults, capped at a chosen level.</string>
     <string name="retry">Retry</string>
     <string name="pause">Pause auto-refresh</string>
     <string name="resume">Resume auto-refresh</string>

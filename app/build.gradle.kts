@@ -3,11 +3,13 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.screenshot)
+    alias(libs.plugins.ksp)
 }
 
 android {
     namespace = "com.example.excusemyfrenchcompose"
-    compileSdk = 35
+    // AppFunctions requires compileSdk 37+ and targetSdk 36+
+    compileSdk = 37
 
     // Required by the Compose Preview Screenshot Testing plugin (screenshotTest source set)
     experimentalProperties["android.experimental.enableScreenshotTest"] = true
@@ -15,7 +17,7 @@ android {
     defaultConfig {
         applicationId = "io.github.jpcottin.excusemyfrench"
         minSdk = 30
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -60,8 +62,15 @@ android {
     }
 }
 
+ksp {
+    arg("appfunctions:aggregateAppFunctions", "true")
+}
+
 dependencies {
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.appfunctions)
+    implementation(libs.androidx.appfunctions.service)
+    ksp(libs.androidx.appfunctions.compiler)
     implementation(libs.okhttp)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
