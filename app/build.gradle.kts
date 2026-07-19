@@ -66,6 +66,12 @@ ksp {
     arg("appfunctions:aggregateAppFunctions", "true")
 }
 
+screenshotTests {
+    // References are recorded on macOS but validated on Linux in CI; allow up to 1% of
+    // pixels to differ to absorb cross-platform text antialiasing and bitmap resampling.
+    imageDifferenceThreshold = 0.01f
+}
+
 dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.appfunctions)

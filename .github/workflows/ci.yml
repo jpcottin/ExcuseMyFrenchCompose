@@ -15,37 +15,112 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      - uses: gradle/actions/setup-gradle@v3
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Run unit tests
         run: ./gradlew :app:testDebugUnitTest
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: unit-test-results
           path: app/build/reports/tests/
 
-  instrumented-tests:
-    name: Instrumented Tests
+  screenshot-tests:
+    name: Screenshot Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      - uses: gradle/actions/setup-gradle@v3
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Validate screenshots against references
+        run: ./gradlew :app:validateDebugScreenshotTest
+
+      - name: Upload screenshot diff report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: screenshot-test-report
+          path: |
+            app/build/reports/screenshotTest/
+            app/build/outputs/screenshotTest-results/
+
+  release-build:
+    name: Release Build (R8)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      # Guards the trimmed R8/ProGuard configuration and resource shrinking.
+      - name: Build minified release APK
+        run: ./gradlew :app:assembleRelease
+
+  instrumented-tests:
+    name: Instrumented Tests (API ${{ matrix.api-level }})
+    runs-on: ubuntu-latest
+    # The API 37.0 leg runs on a preview (16 KB page-size) system image — the only
+    # API 37 image available on hosted runners — so it must not gate PRs.
+    continue-on-error: ${{ matrix.experimental || false }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Stock x86_64 legs — these gate (blocking). No target: runs the
+          # 'default' (AOSP) image via the fallback below.
+          - api-level: '34'
+            gpu: swiftshader_indirect
+          - api-level: '36'
+            gpu: swiftshader_indirect
+          # API 37.0 is only available as a 16 KB page-size preview image on
+          # hosted runners; it needs more RAM/cores to boot reliably.
+          # The ps16k preview images need the GLDirectMem feature set and a cold
+          # boot (-no-snapshot) to come up, like in VulkanSpaceInvaders.
+          - api-level: '37.0'
+            target: google_apis_ps16k
+            gpu: auto
+            ram-size: 4096M
+            cores: 4
+            disk-size: 8192M
+            experimental: true
+            extra-options: -no-snapshot -camera-back none -memory 4096 -feature GLDirectMem,HasSharedSlotsHostMemoryAllocator,Vulkan
+          - api-level: '37.1'
+            target: google_apis_ps16k
+            gpu: auto
+            ram-size: 4096M
+            cores: 4
+            disk-size: 8192M
+            experimental: true
+            extra-options: -no-snapshot -camera-back none -memory 4096 -feature GLDirectMem,HasSharedSlotsHostMemoryAllocator,Vulkan
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Enable KVM
         run: |
@@ -53,17 +128,53 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Restore AVD cache
+        uses: actions/cache@v6
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          # Include the target so a config change can never resurrect a stale AVD
+          # pointing at a system image that is no longer installed.
+          key: avd-api-${{ matrix.api-level }}-${{ matrix.target || 'default' }}
+
+      # Preview legs cold-boot with -no-snapshot, so a cached snapshot is useless there.
+      - name: Create AVD and generate snapshot for caching
+        if: steps.avd-cache.outputs.cache-hit != 'true' && matrix.experimental != true
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          target: ${{ matrix.target || 'default' }}
+          arch: x86_64
+          profile: pixel_6
+          ram-size: ${{ matrix.ram-size }}
+          cores: ${{ matrix.cores || 2 }}
+          disk-size: ${{ matrix.disk-size }}
+          force-avd-creation: false
+          emulator-options: -no-window -gpu ${{ matrix.gpu }} -noaudio -no-boot-anim -verbose -debug-metrics -metrics-collection -show-kernel -delay-adb -camera-back none
+          disable-animations: false
+          script: echo "Generated AVD snapshot for caching."
+
       - name: Run instrumented tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 30
+          api-level: ${{ matrix.api-level }}
+          target: ${{ matrix.target || 'default' }}
           arch: x86_64
-          profile: Nexus 6
+          profile: pixel_6
+          ram-size: ${{ matrix.ram-size }}
+          cores: ${{ matrix.cores || 2 }}
+          disk-size: ${{ matrix.disk-size }}
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu ${{ matrix.gpu }} -noaudio -no-boot-anim -verbose -debug-metrics -metrics-collection -show-kernel -delay-adb ${{ matrix.extra-options || '' }}
+          disable-animations: true
+          emulator-boot-timeout: 900
           script: ./gradlew :app:connectedDebugAndroidTest
 
       - name: Upload instrumented test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: instrumented-test-results
+          name: instrumented-test-results-api-${{ matrix.api-level }}
           path: app/build/reports/androidTests/
