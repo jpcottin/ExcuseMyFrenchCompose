@@ -147,7 +147,7 @@ jobs:
           cores: ${{ matrix.cores || 2 }}
           disk-size: ${{ matrix.disk-size }}
           force-avd-creation: false
-          emulator-options: -no-window -gpu ${{ matrix.gpu }} -noaudio -no-boot-anim -camera-back none
+          emulator-options: -no-window -gpu ${{ matrix.gpu }} -noaudio -no-boot-anim -verbose -debug-metrics -metrics-collection -show-kernel -delay-adb -camera-back none
           disable-animations: false
           script: echo "Generated AVD snapshot for caching."
 
@@ -162,7 +162,7 @@ jobs:
           cores: ${{ matrix.cores || 2 }}
           disk-size: ${{ matrix.disk-size }}
           force-avd-creation: false
-          emulator-options: -no-snapshot-save -no-window -gpu ${{ matrix.gpu }} -noaudio -no-boot-anim -verbose -debug-metrics -metrics-collection -show-kernel
+          emulator-options: -no-snapshot-save -no-window -gpu ${{ matrix.gpu }} -noaudio -no-boot-anim -verbose -debug-metrics -metrics-collection -show-kernel -delay-adb
           disable-animations: true
           emulator-boot-timeout: 900
           script: ./gradlew :app:connectedDebugAndroidTest
