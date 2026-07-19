@@ -51,7 +51,7 @@ On Android 16+, the app registers the `getFrenchInsult` AppFunction so on-device
 ```bash
 adb shell cmd app_function execute-app-function \
   --package io.github.jpcottin.excusemyfrench \
-  --function "com.example.excusemyfrenchcompose.appfunctions.InsultFunctions#getFrenchInsult" \
+  --function "io.github.jpcottin.excusemyfrench.appfunctions.InsultFunctions#getFrenchInsult" \
   --parameters "'{\"maxLevel\": 2}'" --brief-yaml
 ```
 

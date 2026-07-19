@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.excusemyfrenchcompose"
+    namespace = "io.github.jpcottin.excusemyfrench"
     // AppFunctions requires compileSdk 37+ and targetSdk 36+
     compileSdk = 37
 
