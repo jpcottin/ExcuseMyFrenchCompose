@@ -1,5 +1,7 @@
 # Excuse My French - Android Compose App
 
+[![CI](https://github.com/jpcottin/ExcuseMyFrenchCompose/actions/workflows/ci.yml/badge.svg)](https://github.com/jpcottin/ExcuseMyFrenchCompose/actions/workflows/ci.yml)
+
 This is a simple Android application built with Jetpack Compose that displays French insults and accompanying images. It fetches data from a public API.
 
 ## Overview

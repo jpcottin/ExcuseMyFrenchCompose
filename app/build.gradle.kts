@@ -18,8 +18,8 @@ android {
         applicationId = "io.github.jpcottin.excusemyfrench"
         minSdk = 30
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -74,6 +74,8 @@ screenshotTests {
 
 dependencies {
     implementation(libs.kotlinx.serialization.json)
+    // Pin the app's coroutines to the version the Compose test libraries need at runtime
+    implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.appfunctions)
     implementation(libs.androidx.appfunctions.service)
     ksp(libs.androidx.appfunctions.compiler)
@@ -91,6 +93,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
 
+    screenshotTestImplementation(platform(libs.androidx.compose.bom))
     screenshotTestImplementation(libs.androidx.ui.tooling)
     screenshotTestImplementation(libs.screenshot.validation.api)
 

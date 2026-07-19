@@ -23,10 +23,11 @@ data class FrenchInsult(
 /**
  * The app's [AppFunction]s.
  */
-// The AppFunctions service instantiates this class through its no-arg constructor; the
-// KSP compiler only generates the required factory when the primary constructor is no-arg.
+// The AppFunctions service instantiates this class through its no-arg constructor; the KSP
+// compiler only generates the required factory when the no-arg constructor is the ONLY
+// constructor, so tests inject a fake through the property instead of a constructor.
 class InsultFunctions {
-    private val repository: InsultRepository = InsultRepositoryImpl(InsultApiServiceImpl())
+    internal var repository: InsultRepository = InsultRepositoryImpl(InsultApiServiceImpl())
 
     /**
      * Fetch a random French insult whose level does not exceed [maxLevel].
