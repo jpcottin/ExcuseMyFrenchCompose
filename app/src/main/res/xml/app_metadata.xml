@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AppFunctionAppMetadata xmlns:appfn="http://schemas.android.com/apk/androidx.appfunctions"
+    appfn:description="This app provides random French insults with an accompanying tone level.
+Operational Patterns:
+- Call 'getFrenchInsult' directly; no setup or authentication call is required.
+- Insults are random: repeated calls return different insults.
+Constraints:
+- maxLevel must be 1 (family-friendly), 2 (adds vulgar), or 3 (adds offensive); levels are cumulative.
+- Insult text is in French."
+    appfn:displayDescription="@string/app_functions_description" />

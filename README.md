@@ -15,6 +15,7 @@ The app consists of a single screen that displays:
 *   A mute/unmute toggle button.
 *   Pause/resume and next buttons to control the automatic insult refresh.
 *   A level selector (1/2/3) to choose the maximum insult level: 1 = family-friendly, 2 = adds vulgar, 3 = adds offensive. Levels are cumulative, the choice is persisted across launches, and the app defaults to level 1 on first launch.
+*   An AppFunction (`getFrenchInsult`) that lets on-device AI agents and the Android system fetch an insult without opening the app UI (Android 16+).
 
 The layout adapts to the window size. In windows narrower than 600dp (phones in portrait), the text is displayed above the image with a horizontal divider, and the text area takes up at least 15% of the window height. In wider windows (tablets, unfolded foldables, split-screen, and desktop windows), the text and image are shown side by side with a vertical divider. In both layouts the text is centered and the image keeps its aspect ratio while fitting within 90% of the available space.
 
@@ -29,11 +30,23 @@ The layout adapts to the window size. In windows narrower than 600dp (phones in 
 *   **ViewModel:** `AndroidViewModel` (for access to application context)
 *   **Text-To-Speech:** Android `TextToSpeech` API abstracted behind a `TtsService` interface.
 *   **Preferences:** Jetpack DataStore (persists the mute state and insult level).
+*   **Agent Integration:** Jetpack AppFunctions (`androidx.appfunctions`, processed with KSP).
 *   **Testing:**
     *   Unit Tests: JUnit 4, MockK, Robolectric, `kotlinx-coroutines-test`
     *   UI Tests: `androidx.compose.ui:ui-test-junit4`
     *   Screenshot Tests: Compose Preview Screenshot Testing (reference images for phone, foldable, tablet, and desktop; run `./gradlew validateDebugScreenshotTest` to check, `updateDebugScreenshotTest` to re-record)
 *   **Image Loading:** `painterResource` (for placeholder), and manual Base64 decoding and Bitmap conversion for fetched images.
+
+## AppFunctions
+
+On Android 16+, the app registers the `getFrenchInsult` AppFunction so on-device agents (assistants, voice commands, system shortcuts) can fetch an insult without opening the UI. It takes an optional `maxLevel` parameter (1–3, same semantics as the in-app level selector; omitted or 0 means level 1) and returns the insult text and its level. Test it from a shell:
+
+```bash
+adb shell cmd app_function execute-app-function \
+  --package io.github.jpcottin.excusemyfrench \
+  --function "com.example.excusemyfrenchcompose.appfunctions.InsultFunctions#getFrenchInsult" \
+  --parameters "'{\"maxLevel\": 2}'" --brief-yaml
+```
 
 ## API
 
