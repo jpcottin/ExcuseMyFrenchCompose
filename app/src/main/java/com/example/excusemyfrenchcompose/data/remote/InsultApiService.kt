@@ -31,13 +31,14 @@ class InsultApiServiceImpl(
             .build()
 
         return withContext(Dispatchers.IO) {
-            val response = client.newCall(request).execute()
-            Log.d("API Response", "Response Code: ${response.code} — ${response.request.url}")
-            if (response.isSuccessful) {
-                response.body?.string()
-            } else {
-                Log.e("API Error", "Request failed with code: ${response.code}")
-                null
+            client.newCall(request).execute().use { response ->
+                Log.d("API Response", "Response Code: ${response.code} — ${response.request.url}")
+                if (response.isSuccessful) {
+                    response.body.string()
+                } else {
+                    Log.e("API Error", "Request failed with code: ${response.code}")
+                    null
+                }
             }
         }
     }

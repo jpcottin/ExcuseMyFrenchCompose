@@ -72,7 +72,6 @@ class InsultViewModelTest {
         every { mockApplication.getString(R.string.no_internet) } returns "No internet connection. Please check your network."
         every { mockApplication.getString(R.string.tts_init_failed) } returns "TTS Initialization failed."
         every { mockApplication.getString(R.string.tts_language_not_supported) } returns "French language is not supported."
-        every { mockApplication.getString(R.string.image_decoding_error) } returns "Error displaying image or decoding Base64 data."
 
         every { mockSettings.isMuted } returns flowOf(true)
         every { mockSettings.insultLevel } returns flowOf(1)
@@ -182,7 +181,7 @@ class InsultViewModelTest {
     }
 
     @Test
-    fun `TTS initialization error updates uiState with error`() = runTest(testDispatcher) {
+    fun `TTS initialization error updates uiState ttsError without hiding content`() = runTest(testDispatcher) {
         val errorMessage = "French language is not supported."
         every { mockTtsService.initialize(any()) } answers {
             firstArg<(String) -> Unit>().invoke(errorMessage)
@@ -191,8 +190,10 @@ class InsultViewModelTest {
         viewModel.toggleMute() // This triggers ttsService.initialize
 
         val uiState = viewModel.uiState.value
-        assertNotNull(uiState.error)
-        assertTrue(uiState.error!!.contains(errorMessage))
+        assertNotNull(uiState.ttsError)
+        assertTrue(uiState.ttsError!!.contains(errorMessage))
+        // The content error channel stays untouched so the insult remains visible.
+        assertNull(uiState.error)
 
         viewModel.viewModelScope.cancel()
     }
