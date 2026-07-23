@@ -371,7 +371,7 @@ jobs:
   emulator-preview-experiment:
     name: Emulator Preview experiment (emulators/latest, API 37.0)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     continue-on-error: true
 
     steps:
@@ -443,8 +443,9 @@ jobs:
             sed -i 's/^          //' "$HOME/.android/avd/test.avd/config.ini"
           fi
           test -d "$HOME/.android/avd/test.avd" || { echo "ERROR: AVD not created"; exit 1; }
-          # avdmanager defaults are too small for the ps16k image.
-          printf 'hw.ramSize=4096\nhw.cpu.ncore=4\ndisk.dataPartition.size=8192M\n' >> "$HOME/.android/avd/test.avd/config.ini"
+          # avdmanager defaults are too small for the ps16k image (the manual
+          # fallback already writes these keys).
+          grep -q '^hw.ramSize=' "$HOME/.android/avd/test.avd/config.ini" || printf 'hw.ramSize=4096\nhw.cpu.ncore=4\ndisk.dataPartition.size=8192M\n' >> "$HOME/.android/avd/test.avd/config.ini"
           echo "===== AVD root ini ====="; cat "$HOME/.android/avd/test.ini"
 
       - name: Install preview emulator
@@ -463,7 +464,7 @@ jobs:
           sudo apt-get install -y -qq libpulse0
 
       - name: Boot preview emulator
-        timeout-minutes: 20
+        timeout-minutes: 12
         run: |
           SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
           export ANDROID_HOME="$SDK" ANDROID_SDK_ROOT="$SDK"
@@ -474,14 +475,18 @@ jobs:
           EMU_PID=$!
           # Stream the emulator output live into the step log.
           tail -F "${{ github.workspace }}/emulator_stdout.txt" &
+          TAIL_PID=$!
           # wait-for-device hangs forever if the emulator dies; poll the process.
-          for _ in $(seq 1 60); do
+          # Budgets (3 min device, 8 min boot) stay under the 12-min step timeout
+          # so these labeled errors fire before the hard kill. Observed: device
+          # ~15s, boot ~44s.
+          for _ in $(seq 1 36); do
             kill -0 "$EMU_PID" 2>/dev/null || { echo "ERROR: emulator process exited early"; exit 1; }
             adb get-state >/dev/null 2>&1 && break
             sleep 5
           done
-          adb get-state >/dev/null 2>&1 || { echo "ERROR: no device after 300s"; exit 1; }
-          for _ in $(seq 1 90); do
+          adb get-state >/dev/null 2>&1 || { echo "ERROR: no device after 180s"; exit 1; }
+          for _ in $(seq 1 48); do
             [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ] && break
             sleep 10
           done
@@ -492,6 +497,8 @@ jobs:
           adb shell settings put global transition_animation_scale 0
           adb shell settings put global animator_duration_scale 0
           adb logcat -v time > "${{ github.workspace }}/emulator_logcat.txt" &
+          # Stop streaming into later steps; post-boot output stays in the file.
+          kill "$TAIL_PID" 2>/dev/null || true
 
       - name: Run instrumented tests
         run: ./gradlew :app:connectedDebugAndroidTest
