@@ -404,21 +404,26 @@ jobs:
           fi
           "$SDK/cmdline-tools/latest/bin/avdmanager" list device > /dev/null
 
-      - name: Install preview emulator and API 37.0 ps16k image
+      # The AVD must be created BEFORE emulators;latest is installed: with the
+      # preview package's new-generation metadata in the SDK, avdmanager create
+      # silently produces nothing (exit 0) — same trap as the Android CLI
+      # packages.
+      - name: Install API 37.0 ps16k image and create AVD
         run: |
           SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
-          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --channel=3 --install 'emulators;latest' 'system-images;android-37.0;google_apis_ps16k;x86_64' platform-tools > /dev/null
-          echo "===== preview emulator version ====="
-          "$SDK/emulators/latest/emulator" -version | head -5 || true
-
-      - name: Create AVD
-        run: |
-          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --channel=3 --install 'system-images;android-37.0;google_apis_ps16k;x86_64' platform-tools > /dev/null
           echo no | "$SDK/cmdline-tools/latest/bin/avdmanager" create avd --force -n test --package 'system-images;android-37.0;google_apis_ps16k;x86_64'
           test -d "$HOME/.android/avd/test.avd" || { echo "ERROR: AVD not created"; exit 1; }
           # avdmanager defaults are too small for the ps16k image.
           printf 'hw.ramSize=4096\nhw.cpu.ncore=4\ndisk.dataPartition.size=8192M\n' >> "$HOME/.android/avd/test.avd/config.ini"
           echo "===== AVD root ini ====="; cat "$HOME/.android/avd/test.ini"
+
+      - name: Install preview emulator
+        run: |
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --channel=3 --install 'emulators;latest' > /dev/null
+          echo "===== preview emulator version ====="
+          "$SDK/emulators/latest/emulator" -version | head -5 || true
 
       - name: Boot preview emulator
         timeout-minutes: 20
