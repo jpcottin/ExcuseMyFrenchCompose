@@ -412,7 +412,36 @@ jobs:
         run: |
           SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
           yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --channel=3 --install 'system-images;android-37.0;google_apis_ps16k;x86_64' platform-tools > /dev/null
-          echo no | "$SDK/cmdline-tools/latest/bin/avdmanager" create avd --force -n test --package 'system-images;android-37.0;google_apis_ps16k;x86_64'
+          # Mimic the emulator-runner action's invocation (--abi and --device
+          # skip the auto-select/prompt path where bare creates silently no-op).
+          echo no | "$SDK/cmdline-tools/latest/bin/avdmanager" create avd --force -n test --abi 'google_apis_ps16k/x86_64' --device 'pixel_6' --package 'system-images;android-37.0;google_apis_ps16k;x86_64' 2>&1 || echo "avdmanager exit code: $?"
+          ls -la "$HOME/.android/avd/" || true
+          if [ ! -d "$HOME/.android/avd/test.avd" ]; then
+            echo "avdmanager produced nothing; writing the AVD ini files by hand"
+            mkdir -p "$HOME/.android/avd/test.avd"
+            printf 'avd.ini.encoding=UTF-8\npath=%s/.android/avd/test.avd\npath.rel=avd/test.avd\ntarget=android-37.0\n' "$HOME" > "$HOME/.android/avd/test.ini"
+            cat > "$HOME/.android/avd/test.avd/config.ini" << 'CFG'
+          AvdId=test
+          avd.ini.displayname=test
+          avd.ini.encoding=UTF-8
+          abi.type=x86_64
+          hw.cpu.arch=x86_64
+          image.sysdir.1=system-images/android-37.0/google_apis_ps16k/x86_64/
+          tag.id=google_apis
+          tag.display=Google APIs
+          PlayStore.enabled=no
+          hw.lcd.density=420
+          hw.lcd.width=1080
+          hw.lcd.height=2400
+          hw.keyboard=yes
+          hw.gpu.enabled=yes
+          hw.gpu.mode=auto
+          disk.dataPartition.size=8192M
+          hw.ramSize=4096
+          hw.cpu.ncore=4
+          CFG
+            sed -i 's/^          //' "$HOME/.android/avd/test.avd/config.ini"
+          fi
           test -d "$HOME/.android/avd/test.avd" || { echo "ERROR: AVD not created"; exit 1; }
           # avdmanager defaults are too small for the ps16k image.
           printf 'hw.ramSize=4096\nhw.cpu.ncore=4\ndisk.dataPartition.size=8192M\n' >> "$HOME/.android/avd/test.avd/config.ini"
