@@ -1,6 +1,25 @@
 # Excuse My French - Android Compose App
 
-[![CI](https://github.com/jpcottin/ExcuseMyFrenchCompose/actions/workflows/ci.yml/badge.svg)](https://github.com/jpcottin/ExcuseMyFrenchCompose/actions/workflows/ci.yml)
+[![CI](https://github.com/jpcottin/ExcuseMyFrenchCompose/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jpcottin/ExcuseMyFrenchCompose/actions/workflows/ci.yml)
+
+<details>
+<summary><b>CI details</b> — unit/screenshot/R8 jobs + emulator matrix, API 34 → 37.1, plus an Android CLI leg</summary>
+
+Besides unit tests, Compose screenshot validation, and a minified R8 release build, instrumented tests run on GitHub-hosted emulators:
+
+| Legs | Image | Emulator channel | GPU | Gating |
+|---|---|---|---|---|
+| API 34, 36 | `default` (AOSP) x86_64 | stable | swiftshader | ✅ blocking |
+| API 37.0 | `google_apis_ps16k` (16 KB page size) | stable | lavapipe | non-blocking |
+| API 37.0 | `google_apis_ps16k` | canary (`--channel=3`) | lavapipe, auto | non-blocking |
+| API 37.1 | `google_apis_ps16k` | canary | lavapipe, auto | non-blocking |
+| Android CLI experiment | `google_apis_ps16k` 37.0 | canary | emulator default | non-blocking |
+
+The Android CLI leg drives the whole flow with the [`android` CLI](https://d.android.com/tools/agents/android-cli) (`android sdk install --canary`, `android emulator create/start/stop`) instead of `sdkmanager`/`avdmanager` and the emulator-runner action.
+
+All emulator-runner legs use the `pixel_6` profile, full diagnostics (`-verbose -show-kernel -debug-metrics -metrics-collection`), and a `cmdline-tools;latest` update so `avdmanager` writes a valid `target=android-37.x`; the AVD cache is keyed on the cmdline-tools version so stale AVDs with a broken `target=android-0` root ini can never be restored.
+
+</details>
 
 This is a simple Android application built with Jetpack Compose that displays French insults and accompanying images. It fetches data from a public API.
 
