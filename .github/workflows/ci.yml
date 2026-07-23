@@ -454,6 +454,14 @@ jobs:
           echo "===== preview emulator version ====="
           "$SDK/emulators/latest/emulator" -version | head -5 || true
 
+      # The preview package's qemu links libpulse.so.0 at load time even with
+      # -noaudio (its command line already uses -audiodev none); the runner
+      # image doesn't ship it.
+      - name: Install emulator host dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libpulse0
+
       - name: Boot preview emulator
         timeout-minutes: 20
         run: |
@@ -463,12 +471,21 @@ jobs:
           # The binary lives outside $SDK/emulator, so the SDK root must be
           # explicit or it would resolve relative to emulators/.
           "$SDK/emulators/latest/emulator" @test -no-snapshot -no-window -gpu auto -noaudio -no-boot-anim -camera-back none -memory 4096 -verbose -show-kernel -debug-metrics -metrics-collection > "${{ github.workspace }}/emulator_stdout.txt" 2>&1 &
-          adb wait-for-device
+          EMU_PID=$!
+          # Stream the emulator output live into the step log.
+          tail -F "${{ github.workspace }}/emulator_stdout.txt" &
+          # wait-for-device hangs forever if the emulator dies; poll the process.
+          for _ in $(seq 1 60); do
+            kill -0 "$EMU_PID" 2>/dev/null || { echo "ERROR: emulator process exited early"; exit 1; }
+            adb get-state >/dev/null 2>&1 && break
+            sleep 5
+          done
+          adb get-state >/dev/null 2>&1 || { echo "ERROR: no device after 300s"; exit 1; }
           for _ in $(seq 1 90); do
             [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ] && break
             sleep 10
           done
-          [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ] || { echo "===== boot timeout; emulator stdout tail ====="; tail -n 200 "${{ github.workspace }}/emulator_stdout.txt"; exit 1; }
+          [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ] || { echo "===== boot timeout ====="; exit 1; }
           adb devices
           adb shell getprop ro.build.version.sdk
           adb shell settings put global window_animation_scale 0
@@ -488,7 +505,7 @@ jobs:
       - name: Dump emulator output on failure
         if: failure()
         run: |
-          echo "===== emulator stdout (tail) ====="; tail -n 300 "${{ github.workspace }}/emulator_stdout.txt" 2>/dev/null || echo "(none)"
+          echo "===== emulator stdout (full) ====="; cat "${{ github.workspace }}/emulator_stdout.txt" 2>/dev/null || echo "(none)"
           echo "===== logcat (tail) ====="; tail -n 300 "${{ github.workspace }}/emulator_logcat.txt" 2>/dev/null || echo "(none)"
 
       - name: Upload test report on failure
