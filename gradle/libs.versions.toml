@@ -1,5 +1,5 @@
 [versions]
-agp = "9.3.0"
+agp = "9.3.1"
 # Kotlin version used for the Compose and serialization compiler plugins, and forced for
 # AGP's built-in Kotlin via a buildscript classpath in the root build file so they stay aligned.
 kotlin = "2.4.10"
