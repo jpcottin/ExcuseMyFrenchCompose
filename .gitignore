@@ -4,6 +4,9 @@
 /.idea/caches
 /.idea/libraries
 /.idea/modules.xml
+/.idea/compiler.xml
+/.idea/deviceManager.xml
+/.idea/markdown.xml
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
