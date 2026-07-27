@@ -3,7 +3,7 @@
 [![CI](https://github.com/jpcottin/ExcuseMyFrenchCompose/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jpcottin/ExcuseMyFrenchCompose/actions/workflows/ci.yml)
 
 <details>
-<summary><b>CI details</b> — unit/screenshot/R8 jobs + emulator matrix, API 34 → 37.1, plus an Android CLI leg</summary>
+<summary><b>CI details</b> — unit/screenshot/R8 jobs + emulator matrix, API 34 → 37.1, plus Android CLI and Emulator Preview legs</summary>
 
 Besides unit tests, Compose screenshot validation, and a minified R8 release build, instrumented tests run on GitHub-hosted emulators:
 
@@ -15,6 +15,8 @@ Besides unit tests, Compose screenshot validation, and a minified R8 release bui
 | API 37.1 | `google_apis_ps16k` | canary | lavapipe, auto | non-blocking |
 | Android CLI experiment | `google_apis_ps16k` 37.0 | canary | emulator default | non-blocking |
 | Emulator Preview (`emulators;latest`) | `google_apis_ps16k` 37.0 | preview package | auto | non-blocking |
+| Emulator Preview multi-run (snapshot cycles) | `google_apis_ps16k` 37.0 | preview package | auto | non-blocking |
+| Android CLI multi-run (snapshot cycles) | `google_apis_ps16k` 37.0 | canary | emulator default | non-blocking |
 
 The Android CLI leg drives the whole flow with the [`android` CLI](https://d.android.com/tools/agents/android-cli) (`android sdk install --canary`, `android emulator create/start/stop`) instead of `sdkmanager`/`avdmanager` and the emulator-runner action.
 
@@ -62,7 +64,26 @@ The layout adapts to the window size. In windows narrower than 600dp (phones in 
 
 ## Continuous Integration
 
-Every push and pull request to `main` runs seven GitHub Actions jobs: unit tests, screenshot validation against the committed reference images, a minified release build (guarding the R8 configuration), and instrumented tests on an emulator matrix — API 34 and 36 (blocking) plus the API 37.0 and 37.1 16 KB page-size preview images (non-blocking). Dependabot keeps GitHub Actions and Gradle dependencies up to date with weekly PRs.
+Every push and pull request to `main` runs GitHub Actions jobs: unit tests, screenshot validation against the committed reference images, a minified release build (guarding the R8 configuration), and instrumented tests on an emulator matrix — API 34 and 36 (blocking) plus the API 37.0 and 37.1 16 KB page-size preview images (non-blocking). Dependabot keeps GitHub Actions and Gradle dependencies up to date with weekly PRs.
+
+Four further jobs, all non-blocking, track newer Android emulator tooling. Two of
+them run a **snapshot multi-run experiment**: the emulator is booted four times
+against the same AVD with quickboot snapshots enabled, the app is launched only
+on the first cycle, and every later cycle checks whether the snapshot brought it
+back by itself — still running, and still rendering. The app is deliberately
+never relaunched after a restore, since that is the thing being measured. One
+job drives the Emulator Preview package, the other the canary emulator through
+the `android` CLI, so the same experiment can be compared across both.
+
+Because this app's UI is static, rendering is judged with `android layout`
+rather than by diffing two screenshots — a screenshot diff would report a stall
+on every cycle. A non-empty layout tree plus a focused window means the UI is
+present and enumerable. Screenshots are still captured and uploaded for every
+cycle.
+
+The preview jobs share their setup through the composite action in
+`.github/actions/preview-emulator`. `scripts/replay-preview-multirun.sh` replays
+the multi-run job locally in a few minutes instead of a push cycle.
 
 ## AppFunctions
 
