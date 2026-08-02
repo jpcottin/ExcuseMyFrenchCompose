@@ -20,7 +20,7 @@ mockkAndroid = "1.14.11"
 okhttp = "5.4.0"
 kotlinxCoroutines = "1.11.0"
 robolectric = "4.16.1"
-screenshot = "0.0.1-alpha15"
+screenshot = "0.0.1-alpha16"
 ksp = "2.3.10"
 appfunctions = "1.0.0-alpha09"
 
