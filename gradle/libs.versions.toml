@@ -21,7 +21,7 @@ okhttp = "5.4.0"
 kotlinxCoroutines = "1.11.0"
 robolectric = "4.16.1"
 screenshot = "0.0.1-alpha15"
-ksp = "2.3.10"
+ksp = "2.3.11"
 appfunctions = "1.0.0-alpha09"
 
 [libraries]
