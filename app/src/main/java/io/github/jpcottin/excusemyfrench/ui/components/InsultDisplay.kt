@@ -15,6 +15,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.style.MutableStyleState
+import androidx.compose.foundation.style.Style
+import androidx.compose.foundation.style.styleable
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -35,6 +38,7 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -51,15 +55,19 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import io.github.jpcottin.excusemyfrench.R
+import io.github.jpcottin.excusemyfrench.ui.theme.ComponentStyles
 import io.github.jpcottin.excusemyfrench.ui.viewmodel.InsultUiState
 import io.github.jpcottin.excusemyfrench.ui.viewmodel.InsultViewModelInterface
 
 private val WIDE_LAYOUT_THRESHOLD = 600.dp
-private const val IMAGE_MAX_FRACTION = 0.9f
 private const val TEXT_MIN_HEIGHT_FRACTION = 0.15f
 
 @Composable
-fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modifier) {
+fun InsultDisplay(
+    viewModel: InsultViewModelInterface,
+    modifier: Modifier = Modifier,
+    style: Style = Style
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     // Drive the auto-refresh loop only while the screen is at least STARTED, so polling
@@ -71,10 +79,11 @@ fun InsultDisplay(viewModel: InsultViewModelInterface, modifier: Modifier = Modi
         }
     }
 
+    val screenStyleState = remember { MutableStyleState(null) }
     BoxWithConstraints(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp)
+        // ComponentStyles.screen fills the window and applies the 16.dp screen margin;
+        // the caller-supplied style is merged last so it can override those defaults.
+        modifier = modifier.styleable(screenStyleState, ComponentStyles.screen, style)
     ) {
         if (maxWidth < WIDE_LAYOUT_THRESHOLD) {
             PortraitLayout(
@@ -267,23 +276,23 @@ private fun InsultMediaSection(uiState: InsultUiState) {
     } else {
         val imageBitmap = uiState.imageBitmap
         if (imageBitmap != null) {
+            val imageStyleState = remember { MutableStyleState(null) }
             Image(
                 bitmap = imageBitmap,
                 contentDescription = stringResource(R.string.insult_image),
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .aspectRatio(imageBitmap.width.toFloat() / imageBitmap.height.toFloat())
-                    .fillMaxWidth(IMAGE_MAX_FRACTION)
-                    .fillMaxHeight(IMAGE_MAX_FRACTION)
+                    .styleable(imageStyleState, ComponentStyles.mediaImage)
             )
         } else if (uiState.error == null) {
+            val placeholderStyleState = remember { MutableStyleState(null) }
             Image(
                 painter = painterResource(id = R.drawable.ic_launcher_foreground),
                 contentDescription = stringResource(R.string.placeholder_image),
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
-                    .fillMaxWidth(IMAGE_MAX_FRACTION)
-                    .fillMaxHeight(IMAGE_MAX_FRACTION)
+                    .styleable(placeholderStyleState, ComponentStyles.mediaImage)
                     .aspectRatio(1f)
             )
         }
