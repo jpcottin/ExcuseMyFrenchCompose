@@ -62,6 +62,13 @@ android {
     }
 }
 
+kotlin {
+    compilerOptions {
+        // The Compose Styles API (androidx.compose.foundation.style) is experimental.
+        freeCompilerArgs.add("-opt-in=androidx.compose.foundation.style.ExperimentalFoundationStyleApi")
+    }
+}
+
 ksp {
     arg("appfunctions:aggregateAppFunctions", "true")
 }
