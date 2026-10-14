@@ -9,7 +9,7 @@ Besides unit tests, Compose screenshot validation, and a minified R8 release bui
 
 | Legs | Image | Emulator channel | GPU | Gating |
 |---|---|---|---|---|
-| API 34, 36 | `default` (AOSP) x86_64 | stable | swiftshader | ✅ blocking |
+| API 34, 36 | `default` (AOSP) x86_64 | stable | lavapipe / auto | ✅ blocking |
 | API 37.0 | `google_apis_ps16k` (16 KB page size) | stable | lavapipe | non-blocking |
 | API 37.0 | `google_apis_ps16k` | canary (`--channel=3`) | lavapipe, auto | non-blocking |
 | API 37.1 | `google_apis_ps16k` | canary | lavapipe, auto | non-blocking |
