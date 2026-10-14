@@ -87,11 +87,14 @@ jobs:
       matrix:
         include:
           # Stock x86_64 legs — these gate (blocking). No target: runs the
-          # 'default' (AOSP) image via the fallback below.
+          # 'default' (AOSP) image via the fallback below. They render with
+          # lavapipe (Mesa's CPU Vulkan driver) and -gpu auto rather than
+          # swiftshader_indirect, so the gating legs exercise the same GPU
+          # backends as the preview legs.
           - api-level: '34'
-            gpu: swiftshader_indirect
+            gpu: lavapipe
           - api-level: '36'
-            gpu: swiftshader_indirect
+            gpu: auto
           # API 37.x ps16k preview legs; more RAM/cores to boot reliably and a
           # cold boot (-no-snapshot). channel selects the emulator + image
           # revision via sdkmanager --channel.
@@ -186,10 +189,12 @@ jobs:
             ~/.android/avd/*
             ~/.android/adb*
           # Include the target so a config change can never resurrect a stale AVD
-          # pointing at a system image that is no longer installed, and the
-          # cmdline-tools version so AVDs created by an older avdmanager (broken
-          # target=android-0 root ini) are invalidated automatically.
-          key: avd-api-${{ matrix.api-level }}-${{ matrix.target || 'default' }}-tools${{ steps.cmdline-tools.outputs.version }}
+          # pointing at a system image that is no longer installed, the GPU
+          # backend so the cached quickboot snapshot was taken with the renderer
+          # the test run uses, and the cmdline-tools version so AVDs created by
+          # an older avdmanager (broken target=android-0 root ini) are
+          # invalidated automatically.
+          key: avd-api-${{ matrix.api-level }}-${{ matrix.target || 'default' }}-${{ matrix.gpu }}-tools${{ steps.cmdline-tools.outputs.version }}
 
       # Preview legs cold-boot with -no-snapshot, so a cached snapshot is useless there.
       - name: Create AVD and generate snapshot for caching
