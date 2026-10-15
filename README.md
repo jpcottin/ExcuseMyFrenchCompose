@@ -13,6 +13,7 @@ Besides unit tests, Compose screenshot validation, and a minified R8 release bui
 | API 37.0 | `google_apis_ps16k` (16 KB page size) | stable | lavapipe | non-blocking |
 | API 37.0 | `google_apis_ps16k` | canary (`--channel=3`) | lavapipe, auto | non-blocking |
 | API 37.1 | `google_apis_ps16k` | canary | lavapipe, auto | non-blocking |
+| API 37.2 | `google_apis_ps16k` | canary | lavapipe, auto | non-blocking |
 | Android CLI experiment | `google_apis_ps16k` 37.0 | canary | emulator default | non-blocking |
 | Emulator Preview (`emulators;latest`) | `google_apis_ps16k` 37.0 | preview package | auto | non-blocking |
 | Emulator Preview multi-run (snapshot cycles) | `google_apis_ps16k` 37.0 | preview package | auto | non-blocking |
@@ -64,7 +65,7 @@ The layout adapts to the window size. In windows narrower than 600dp (phones in 
 
 ## Continuous Integration
 
-Every push and pull request to `main` runs GitHub Actions jobs: unit tests, screenshot validation against the committed reference images, a minified release build (guarding the R8 configuration), and instrumented tests on an emulator matrix — API 34 and 36 (blocking) plus the API 37.0 and 37.1 16 KB page-size preview images (non-blocking). Dependabot keeps GitHub Actions and Gradle dependencies up to date with weekly PRs.
+Every push and pull request to `main` runs GitHub Actions jobs: unit tests, screenshot validation against the committed reference images, a minified release build (guarding the R8 configuration), and instrumented tests on an emulator matrix — API 34 and 36 (blocking) plus the API 37.0, 37.1 and 37.2 16 KB page-size preview images (non-blocking). Dependabot keeps GitHub Actions and Gradle dependencies up to date with weekly PRs.
 
 Four further jobs, all non-blocking, track newer Android emulator tooling. Two of
 them run a **snapshot multi-run experiment**: the emulator is booted four times
