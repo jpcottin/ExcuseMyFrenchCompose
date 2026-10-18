@@ -3,7 +3,7 @@
 [![CI](https://github.com/jpcottin/ExcuseMyFrenchCompose/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jpcottin/ExcuseMyFrenchCompose/actions/workflows/ci.yml)
 
 <details>
-<summary><b>CI details</b> — unit/screenshot/R8 jobs + emulator matrix, API 34 → 37.1, plus Android CLI and Emulator Preview legs</summary>
+<summary><b>CI details</b> — unit/screenshot/R8 jobs + emulator matrix, API 34 → 37.2, plus Android CLI and Emulator Preview legs</summary>
 
 Besides unit tests, Compose screenshot validation, and a minified R8 release build, instrumented tests run on GitHub-hosted emulators:
 
