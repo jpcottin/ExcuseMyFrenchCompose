@@ -5,8 +5,8 @@ import android.util.Log
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.viewModelScope
 import io.github.jpcottin.excusemyfrench.R
-import io.github.jpcottin.excusemyfrench.data.model.Insult
 import io.github.jpcottin.excusemyfrench.data.model.Image
+import io.github.jpcottin.excusemyfrench.data.model.Insult
 import io.github.jpcottin.excusemyfrench.data.model.InsultResponse
 import io.github.jpcottin.excusemyfrench.data.repository.InsultRepository
 import io.github.jpcottin.excusemyfrench.data.settings.SettingsRepository
@@ -19,12 +19,15 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import java.io.IOException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -33,7 +36,6 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import java.io.IOException
 
 @ExperimentalCoroutinesApi
 class InsultViewModelTest {
@@ -114,6 +116,62 @@ class InsultViewModelTest {
         assertNull(uiState.imageBitmap)
         assertFalse(uiState.isLoading)
 
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `fetchInsult with blank text shows the placeholder`() = runTest(testDispatcher) {
+        coEvery { mockRepository.fetchInsult(any()) } returns InsultResponse(
+            insult = Insult(text = "   ", index = 1),
+            image = Image(data = "test_data", mimetype = "image/jpeg", indexImg = 2)
+        )
+
+        viewModel.fetchInsult()
+
+        val uiState = viewModel.uiState.value
+        assertEquals("No insult text provided", uiState.insultText)
+        assertNull(uiState.error)
+        assertFalse(uiState.isLoading)
+
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `fetchInsult with an unexpected exception reports could not load`() = runTest(testDispatcher) {
+        coEvery { mockRepository.fetchInsult(any()) } throws IllegalStateException("malformed payload")
+
+        viewModel.fetchInsult()
+
+        val uiState = viewModel.uiState.value
+        assertEquals("Could not load insult.  Please try again later.", uiState.error)
+        assertTrue(uiState.insultText.isEmpty())
+        assertFalse(uiState.isLoading)
+
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `autoRefresh fetches every interval and stops while paused`() = runTest(testDispatcher) {
+        coEvery { mockRepository.fetchInsult(any()) } returns InsultResponse(
+            insult = Insult(text = "Test Insult", index = 1),
+            image = Image(data = "test_data", mimetype = "image/jpeg", indexImg = 2)
+        )
+
+        val job = backgroundScope.launch { viewModel.autoRefresh() }
+        advanceTimeBy(25_000)   // ticks at 0 s, 10 s and 20 s
+        coVerify(exactly = 3) { mockRepository.fetchInsult(any()) }
+
+        viewModel.togglePause()
+        assertTrue(viewModel.uiState.value.isPaused)
+        advanceTimeBy(30_000)   // three more ticks, none of them fetches
+        coVerify(exactly = 3) { mockRepository.fetchInsult(any()) }
+
+        viewModel.togglePause()
+        assertFalse(viewModel.uiState.value.isPaused)
+        advanceTimeBy(10_000)   // the next tick fetches again
+        coVerify(exactly = 4) { mockRepository.fetchInsult(any()) }
+
+        job.cancel()
         viewModel.viewModelScope.cancel()
     }
 
