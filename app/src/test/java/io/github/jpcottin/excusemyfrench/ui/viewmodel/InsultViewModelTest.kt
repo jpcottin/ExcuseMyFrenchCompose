@@ -23,11 +23,14 @@ import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -188,6 +191,51 @@ class InsultViewModelTest {
         assertFalse(uiState.isLoading)
 
         viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `toggleMute persists the new value and starts TTS when unmuting`() = runTest(testDispatcher) {
+        coEvery { mockSettings.setMuted(any()) } returns Unit
+        every { mockTtsService.initialize(any()) } returns Unit
+
+        viewModel.toggleMute()            // true -> false: unmuted
+        advanceUntilIdle()
+        coVerify(exactly = 1) { mockSettings.setMuted(false) }
+        verify(exactly = 1) { mockTtsService.initialize(any()) }
+
+        viewModel.toggleMute()            // false -> true: muted again, no TTS start
+        advanceUntilIdle()
+        coVerify(exactly = 1) { mockSettings.setMuted(true) }
+        verify(exactly = 1) { mockTtsService.initialize(any()) }
+
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `the user's mute choice wins over a persisted value that arrives later`() = runTest(testDispatcher) {
+        // The stored value is still being read when the user taps mute.
+        every { mockSettings.isMuted } returns flow { delay(5_000); emit(true) }
+        coEvery { mockSettings.setMuted(any()) } returns Unit
+        every { mockTtsService.initialize(any()) } returns Unit
+        val lateModel = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings)
+
+        lateModel.toggleMute()            // default true -> false before the store answers
+        assertFalse(lateModel.uiState.value.isMuted)
+        advanceUntilIdle()                // the stored "true" arrives now
+        assertFalse(lateModel.uiState.value.isMuted)
+
+        lateModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `a persisted mute value is applied when the user has not chosen`() = runTest(testDispatcher) {
+        every { mockSettings.isMuted } returns flowOf(false)
+        val model = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings)
+        assertTrue(model.uiState.value.isMuted)     // the default, until the store is read
+        advanceUntilIdle()
+        assertFalse(model.uiState.value.isMuted)
+
+        model.viewModelScope.cancel()
     }
 
     @Test
