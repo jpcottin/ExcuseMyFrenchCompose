@@ -2,7 +2,7 @@
 agp = "9.3.1"
 # Kotlin version used for the Compose and serialization compiler plugins, and forced for
 # AGP's built-in Kotlin via a buildscript classpath in the root build file so they stay aligned.
-kotlin = "2.4.10"
+kotlin = "2.4.20"
 coreKtxVersion = "1.7.0"
 datastore = "1.2.1"
 coreTesting = "2.2.0"
