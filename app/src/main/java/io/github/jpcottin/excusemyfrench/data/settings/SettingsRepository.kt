@@ -2,13 +2,17 @@ package io.github.jpcottin.excusemyfrench.data.settings
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import java.io.IOException
 
 /**
  * Persists user preferences. Kept behind an interface so the ViewModel can be unit tested
@@ -21,19 +25,27 @@ interface SettingsRepository {
     suspend fun setInsultLevel(level: Int)
 }
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
+    name = "settings",
+    // A damaged file is replaced by an empty one instead of failing every read and edit.
+    corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+)
 
 class DataStoreSettingsRepository(private val context: Context) : SettingsRepository {
 
+    // An unreadable file reads as the defaults; the next successful edit rewrites it.
+    private val prefs: Flow<Preferences> = context.dataStore.data
+        .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
+
     override val isMuted: Flow<Boolean> =
-        context.dataStore.data.map { preferences -> preferences[MUTED_KEY] ?: DEFAULT_MUTED }
+        prefs.map { preferences -> preferences[MUTED_KEY] ?: DEFAULT_MUTED }
 
     override suspend fun setMuted(muted: Boolean) {
         context.dataStore.edit { preferences -> preferences[MUTED_KEY] = muted }
     }
 
     override val insultLevel: Flow<Int> =
-        context.dataStore.data.map { preferences -> preferences[LEVEL_KEY] ?: DEFAULT_LEVEL }
+        prefs.map { preferences -> preferences[LEVEL_KEY] ?: DEFAULT_LEVEL }
 
     override suspend fun setInsultLevel(level: Int) {
         context.dataStore.edit { preferences -> preferences[LEVEL_KEY] = level }

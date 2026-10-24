@@ -26,8 +26,10 @@ class TtsServiceImpl(
     private var isReady = false
     private var pendingText: String? = null
     private val TTS_UTTERANCE_ID = "insult_speech"
+    private var onError: ((String) -> Unit)? = null
 
     override fun initialize(onError: (String) -> Unit) {
+        this.onError = onError
         if (tts != null) return
         // A failed engine is discarded so the next initialize() creates a fresh one and reports
         // again; keeping it would make every later attempt a silent no-op. The listener may run
@@ -56,10 +58,16 @@ class TtsServiceImpl(
     }
 
     override fun speak(text: String) {
-        if (isReady) {
-            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, TTS_UTTERANCE_ID)
-        } else {
+        val engine = tts
+        if (!isReady || engine == null) {
             pendingText = text
+            return
+        }
+        // ERROR here means the engine is gone (its process died, or the user switched engines):
+        // drop it so the next initialize() builds a fresh one, and say so.
+        if (engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, TTS_UTTERANCE_ID) == TextToSpeech.ERROR) {
+            discardEngine()
+            onError?.invoke(context.getString(R.string.tts_init_failed))
         }
     }
 

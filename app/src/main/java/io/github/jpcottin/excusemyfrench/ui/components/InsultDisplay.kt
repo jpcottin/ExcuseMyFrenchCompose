@@ -45,7 +45,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -160,6 +162,7 @@ private fun PortraitLayout(
                 modifier = Modifier
                     .weight(1f)
                     .testTag("ttsError")
+                    .semantics { liveRegion = LiveRegionMode.Polite }
             )
             ControlBar(
                 uiState = uiState,
@@ -223,6 +226,7 @@ private fun WideLayout(
                 modifier = Modifier
                     .weight(1f)
                     .testTag("ttsError")
+                    .semantics { liveRegion = LiveRegionMode.Polite }
             )
             ControlBar(
                 uiState = uiState,
@@ -248,7 +252,7 @@ private fun InsultTextSection(uiState: InsultUiState, onRetry: () -> Unit, modif
                     style = MaterialTheme.typography.headlineLarge,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.testTag("errorText")
+                    modifier = Modifier.testTag("errorText").semantics { liveRegion = LiveRegionMode.Polite }
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
@@ -263,7 +267,7 @@ private fun InsultTextSection(uiState: InsultUiState, onRetry: () -> Unit, modif
                 text = uiState.insultText,
                 style = MaterialTheme.typography.headlineLarge,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.testTag("insultText")
+                modifier = Modifier.testTag("insultText").semantics { liveRegion = LiveRegionMode.Polite }
             )
         }
     }

@@ -92,17 +92,27 @@ class InsultViewModel(
     // it was instead of fetching, and speaking, a fresh insult at once.
     private var lastFetchAtMs: Long? = null
 
+    // True from the moment the screen's loop is cancelled until a screen runs it again: an
+    // insult that arrives in between (a Next tap answered after Home, or a call) is shown, not
+    // spoken over whatever the user is now doing.
+    private var screenGone = false
+
     override suspend fun autoRefresh() {
-        while (currentCoroutineContext().isActive) {
-            val sinceLast = lastFetchAtMs?.let { elapsedRealtimeMs() - it }
-            if (sinceLast != null && sinceLast < REFRESH_INTERVAL) {
-                delay(REFRESH_INTERVAL - sinceLast)
-                continue
+        screenGone = false
+        try {
+            while (currentCoroutineContext().isActive) {
+                val sinceLast = lastFetchAtMs?.let { elapsedRealtimeMs() - it }
+                if (sinceLast != null && sinceLast < REFRESH_INTERVAL) {
+                    delay(REFRESH_INTERVAL - sinceLast)
+                    continue
+                }
+                if (!_uiState.value.isPaused) {
+                    fetchInsult()
+                }
+                delay(REFRESH_INTERVAL)
             }
-            if (!_uiState.value.isPaused) {
-                fetchInsult()
-            }
-            delay(REFRESH_INTERVAL)
+        } finally {
+            screenGone = true
         }
     }
 
@@ -112,7 +122,7 @@ class InsultViewModel(
 
     @androidx.annotation.VisibleForTesting
     suspend fun fetchInsult() = fetchMutex.withLock {
-        lastFetchAtMs = elapsedRealtimeMs()
+        val startedAt = elapsedRealtimeMs()
         try {
             val response = repository.fetchInsult(_uiState.value.insultLevel)
             if (response != null) {
@@ -131,6 +141,21 @@ class InsultViewModel(
         } catch (e: Exception) {
             Log.e(TAG, "Error fetching insult: ${e.message}", e)
             handleError(getString(R.string.could_not_load))
+        } finally {
+            // A fetch cancelled with its screen produced nothing: the restarted loop must retry
+            // at once rather than wait out the interval on a spinner.
+            if (currentCoroutineContext().isActive) lastFetchAtMs = startedAt
+        }
+    }
+
+    /** A setting that cannot be written is logged; the user's choice still applies for this session. */
+    private suspend fun save(write: suspend () -> Unit) {
+        try {
+            write()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "Could not save a setting", e)
         }
     }
 
@@ -138,7 +163,7 @@ class InsultViewModel(
         muteOverridden = true
         val newMuted = !_uiState.value.isMuted
         _uiState.update { it.copy(isMuted = newMuted, ttsError = null) }
-        viewModelScope.launch { settings.setMuted(newMuted) }
+        viewModelScope.launch { save { settings.setMuted(newMuted) } }
         if (newMuted) {
             // Muting silences the insult being spoken and anything queued for the engine.
             ttsService.stop()
@@ -158,8 +183,8 @@ class InsultViewModel(
         if (level == _uiState.value.insultLevel) return
         _uiState.update { it.copy(insultLevel = level, isLoading = true, error = null) }
         viewModelScope.launch {
-            settings.setInsultLevel(level)
-            fetchInsult()
+            save { settings.setInsultLevel(level) }
+            fetchInsult()   // the level applies for this session even when it could not be saved
         }
     }
 
@@ -169,7 +194,7 @@ class InsultViewModel(
     }
 
     override fun speak(text: String) {
-        if (_uiState.value.isMuted) return
+        if (_uiState.value.isMuted || screenGone) return
         ttsService.initialize { errorMessage ->
             handleTTSError(errorMessage)
         }

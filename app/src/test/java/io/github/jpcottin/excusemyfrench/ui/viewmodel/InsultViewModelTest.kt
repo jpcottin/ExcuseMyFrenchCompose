@@ -300,6 +300,74 @@ class InsultViewModelTest {
     }
 
     @Test
+    fun `a level that cannot be saved still applies and refetches`() = runTest(testDispatcher) {
+        coEvery { mockSettings.setInsultLevel(any()) } throws IOException("disk full")
+        coEvery { mockRepository.fetchInsult(2) } returns InsultResponse(
+            insult = Insult(text = "Level 2 Insult", index = 1, level = 2)
+        )
+        advanceUntilIdle()
+        viewModel.setInsultLevel(2)
+        advanceUntilIdle()
+        coVerify(exactly = 1) { mockRepository.fetchInsult(2) }
+        assertEquals("Level 2 Insult", viewModel.uiState.value.insultText)
+        assertFalse(viewModel.uiState.value.isLoading)
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `a mute that cannot be saved still applies and does not crash`() = runTest(testDispatcher) {
+        coEvery { mockSettings.setMuted(any()) } throws IOException("disk full")
+        advanceUntilIdle()
+        viewModel.toggleMute()
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.isMuted)
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `a fetch cancelled with its screen is retried as soon as the loop restarts`() = runTest(testDispatcher) {
+        coEvery { mockRepository.fetchInsult(any()) } coAnswers {
+            delay(5_000); InsultResponse(insult = Insult(text = "Late", index = 1))
+        }
+        val model = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings, decodeDispatcher = testDispatcher) { testScheduler.currentTime }
+
+        val first = backgroundScope.launch { model.autoRefresh() }
+        advanceTimeBy(1_000)                 // the request is in flight...
+        first.cancel()                       // ...when the screen is recreated
+
+        val second = backgroundScope.launch { model.autoRefresh() }
+        advanceTimeBy(1_000)
+        coVerify(exactly = 2) { mockRepository.fetchInsult(any()) }
+        advanceTimeBy(5_000)
+        assertEquals("Late", model.uiState.value.insultText)
+        assertFalse(model.uiState.value.isLoading)
+
+        second.cancel()
+        model.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `an insult that arrives after the screen has gone is shown but not spoken`() = runTest(testDispatcher) {
+        coEvery { mockRepository.fetchInsult(any()) } coAnswers {
+            delay(3_000); InsultResponse(insult = Insult(text = "Tard", index = 1))
+        }
+        advanceUntilIdle()
+        viewModel.toggleMute()                                   // unmuted
+        val loop = backgroundScope.launch { viewModel.autoRefresh() }
+        advanceTimeBy(4_000)                                     // the first insult is shown and spoken
+        verify(exactly = 1) { mockTtsService.speak(any()) }
+
+        viewModel.fetchNext()                                    // Next on a slow network...
+        advanceTimeBy(1_000)
+        loop.cancel()                                            // ...then Home before the reply
+        advanceUntilIdle()
+
+        assertEquals("Tard", viewModel.uiState.value.insultText) // the content still lands
+        verify(exactly = 1) { mockTtsService.speak(any()) }
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
     fun `speak is called when unmuted and insult is fetched`() = runTest(testDispatcher) {
         val testInsultText = "Test Insult"
         coEvery { mockRepository.fetchInsult(any()) } returns InsultResponse(
