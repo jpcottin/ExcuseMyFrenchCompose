@@ -146,26 +146,29 @@ private fun PortraitLayout(
             }
         }
 
-        // TTS problems are shown as a small unobtrusive note; the insult stays visible.
-        uiState.ttsError?.let { ttsError ->
+        // The note and the control bar share the bottom edge in one row, so a TTS
+        // problem is never drawn underneath the level buttons on a narrow screen.
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
+            verticalAlignment = Alignment.Bottom
+        ) {
+            // TTS problems are shown as a small unobtrusive note; the insult stays visible.
             Text(
-                text = ttsError,
+                text = uiState.ttsError ?: "",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier
-                    .align(Alignment.BottomStart)
+                    .weight(1f)
                     .testTag("ttsError")
             )
+            ControlBar(
+                uiState = uiState,
+                onToggleMute = onToggleMute,
+                onTogglePause = onTogglePause,
+                onNext = onNext,
+                onSetLevel = onSetLevel
+            )
         }
-
-        ControlBar(
-            uiState = uiState,
-            onToggleMute = onToggleMute,
-            onTogglePause = onTogglePause,
-            onNext = onNext,
-            onSetLevel = onSetLevel,
-            modifier = Modifier.align(Alignment.BottomEnd)
-        )
     }
 }
 
@@ -206,26 +209,29 @@ private fun WideLayout(
             }
         }
 
-        // TTS problems are shown as a small unobtrusive note; the insult stays visible.
-        uiState.ttsError?.let { ttsError ->
+        // The note and the control bar share the bottom edge in one row, so a TTS
+        // problem is never drawn underneath the level buttons on a narrow screen.
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
+            verticalAlignment = Alignment.Bottom
+        ) {
+            // TTS problems are shown as a small unobtrusive note; the insult stays visible.
             Text(
-                text = ttsError,
+                text = uiState.ttsError ?: "",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier
-                    .align(Alignment.BottomStart)
+                    .weight(1f)
                     .testTag("ttsError")
             )
+            ControlBar(
+                uiState = uiState,
+                onToggleMute = onToggleMute,
+                onTogglePause = onTogglePause,
+                onNext = onNext,
+                onSetLevel = onSetLevel
+            )
         }
-
-        ControlBar(
-            uiState = uiState,
-            onToggleMute = onToggleMute,
-            onTogglePause = onTogglePause,
-            onNext = onNext,
-            onSetLevel = onSetLevel,
-            modifier = Modifier.align(Alignment.BottomEnd)
-        )
     }
 }
 
