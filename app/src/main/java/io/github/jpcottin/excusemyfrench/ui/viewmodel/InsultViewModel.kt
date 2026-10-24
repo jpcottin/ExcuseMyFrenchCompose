@@ -1,6 +1,7 @@
 package io.github.jpcottin.excusemyfrench.ui.viewmodel
 
 import android.app.Application
+import android.os.SystemClock
 import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.ImageBitmap
@@ -43,7 +44,8 @@ class InsultViewModel(
     application: Application,
     private val repository: InsultRepository,
     private val ttsService: TtsService,
-    private val settings: SettingsRepository
+    private val settings: SettingsRepository,
+    private val elapsedRealtimeMs: () -> Long = SystemClock::elapsedRealtime,
 ) : AndroidViewModel(application), InsultViewModelInterface {
 
     companion object {
@@ -75,8 +77,18 @@ class InsultViewModel(
         }
     }
 
+    // When the last fetch (of any kind) happened, so a loop restarted by the screen being
+    // recreated (rotation, unfold, a return from the background) picks up the interval where
+    // it was instead of fetching, and speaking, a fresh insult at once.
+    private var lastFetchAtMs: Long? = null
+
     override suspend fun autoRefresh() {
         while (currentCoroutineContext().isActive) {
+            val sinceLast = lastFetchAtMs?.let { elapsedRealtimeMs() - it }
+            if (sinceLast != null && sinceLast < REFRESH_INTERVAL) {
+                delay(REFRESH_INTERVAL - sinceLast)
+                continue
+            }
             if (!_uiState.value.isPaused) {
                 fetchInsult()
             }
@@ -90,6 +102,7 @@ class InsultViewModel(
 
     @androidx.annotation.VisibleForTesting
     suspend fun fetchInsult() = fetchMutex.withLock {
+        lastFetchAtMs = elapsedRealtimeMs()
         try {
             val response = repository.fetchInsult(_uiState.value.insultLevel)
             if (response != null) {
