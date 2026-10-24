@@ -63,14 +63,18 @@ class InsultViewModel(
     private var levelOverridden = false
 
     init {
+        // The repository maps a read error to its defaults; this guard keeps any other
+        // implementation (or a future error type) from taking the process down at start.
         viewModelScope.launch {
-            val savedMuted = settings.isMuted.first()
+            val savedMuted = runCatching { settings.isMuted.first() }
+                .onFailure { Log.e(TAG, "Could not read the mute setting", it) }.getOrNull() ?: return@launch
             if (!muteOverridden) {
                 _uiState.update { it.copy(isMuted = savedMuted) }
             }
         }
         viewModelScope.launch {
-            val savedLevel = settings.insultLevel.first()
+            val savedLevel = runCatching { settings.insultLevel.first() }
+                .onFailure { Log.e(TAG, "Could not read the level setting", it) }.getOrNull() ?: return@launch
             if (!levelOverridden) {
                 _uiState.update { it.copy(insultLevel = savedLevel) }
             }
