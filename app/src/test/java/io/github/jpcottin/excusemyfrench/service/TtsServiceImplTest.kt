@@ -100,6 +100,20 @@ class TtsServiceImplTest {
     }
 
     @Test
+    fun `an engine that can no longer speak is reported and replaced`() {
+        initialize()
+        listeners[0].onInit(TextToSpeech.SUCCESS)
+        every { engines[0].speak(any(), any(), any(), any()) } returns TextToSpeech.ERROR
+
+        service.speak("Bonjour")
+
+        assertEquals(listOf("TTS Initialization failed."), errors)
+        verify(exactly = 1) { engines[0].shutdown() }
+        initialize()
+        assertEquals(2, engines.size)
+    }
+
+    @Test
     fun `a healthy engine is initialized only once`() {
         initialize()
         listeners[0].onInit(TextToSpeech.SUCCESS)

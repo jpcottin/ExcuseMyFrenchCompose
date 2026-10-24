@@ -2,6 +2,10 @@ package io.github.jpcottin.excusemyfrench.ui.components
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
@@ -78,6 +82,17 @@ class InsultDisplayTest {
 
         composeTestRule.onNodeWithText(noInsultText).assertIsDisplayed()
         composeTestRule.onNodeWithContentDescription(context.getString(R.string.placeholder_image)).assertIsDisplayed()
+    }
+
+    @Test
+    fun insultDisplay_insultText_isAnnouncedWhenItChanges() {
+        composeTestRule.setContent {
+            ExcuseMyFrenchComposeTheme {
+                InsultDisplay(viewModel = FakeViewModel(InsultUiState(insultText = "Test Insult", isLoading = false)))
+            }
+        }
+        composeTestRule.onNodeWithTag("insultText")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite))
     }
 
     @Test
