@@ -239,6 +239,19 @@ class InsultViewModelTest {
     }
 
     @Test
+    fun `muting stops the speech in progress and whatever was queued`() = runTest(testDispatcher) {
+        advanceUntilIdle()
+        viewModel.toggleMute()   // unmuted: the engine starts
+        advanceUntilIdle()
+        verify(exactly = 0) { mockTtsService.stop() }
+
+        viewModel.toggleMute()   // muted again
+        advanceUntilIdle()
+        verify(exactly = 1) { mockTtsService.stop() }
+        verify(exactly = 1) { mockTtsService.initialize(any()) }
+    }
+
+    @Test
     fun `toggleMute updates isMuted state`() = runTest(testDispatcher) {
         assertTrue(viewModel.uiState.value.isMuted)
 
