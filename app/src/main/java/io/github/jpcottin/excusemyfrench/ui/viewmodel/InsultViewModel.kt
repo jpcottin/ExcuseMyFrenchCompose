@@ -116,7 +116,10 @@ class InsultViewModel(
         val newMuted = !_uiState.value.isMuted
         _uiState.update { it.copy(isMuted = newMuted, ttsError = null) }
         viewModelScope.launch { settings.setMuted(newMuted) }
-        if (!newMuted) {
+        if (newMuted) {
+            // Muting silences the insult being spoken and anything queued for the engine.
+            ttsService.stop()
+        } else {
             ttsService.initialize { errorMessage ->
                 handleTTSError(errorMessage)
             }
