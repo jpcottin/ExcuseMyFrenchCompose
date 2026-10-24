@@ -16,6 +16,9 @@ import io.github.jpcottin.excusemyfrench.service.TtsService
 import io.github.jpcottin.excusemyfrench.util.ImageUtils
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,6 +48,9 @@ class InsultViewModel(
     private val repository: InsultRepository,
     private val ttsService: TtsService,
     private val settings: SettingsRepository,
+    // Base64 + JPEG decoding of a server-sized photo takes tens of milliseconds: off the
+    // main thread, where the view model's coroutines otherwise run.
+    private val decodeDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val elapsedRealtimeMs: () -> Long = SystemClock::elapsedRealtime,
 ) : AndroidViewModel(application), InsultViewModelInterface {
 
@@ -110,7 +116,7 @@ class InsultViewModel(
         try {
             val response = repository.fetchInsult(_uiState.value.insultLevel)
             if (response != null) {
-                val bitmap = ImageUtils.decodeImage(response.image.data)?.asImageBitmap()
+                val bitmap = withContext(decodeDispatcher) { ImageUtils.decodeImage(response.image.data) }?.asImageBitmap()
                 val text = response.insult.text.ifBlank { "No insult text provided" }
                 updateUIWithSuccess(text, bitmap)
                 speak(text)
