@@ -81,7 +81,7 @@ class InsultViewModelTest {
         every { mockSettings.isMuted } returns flowOf(true)
         every { mockSettings.insultLevel } returns flowOf(1)
 
-        viewModel = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings)
+        viewModel = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings) { testDispatcher.scheduler.currentTime }
     }
 
     @After
@@ -179,6 +179,30 @@ class InsultViewModelTest {
     }
 
     @Test
+    fun `a restarted autoRefresh picks the interval up where it was`() = runTest(testDispatcher) {
+        coEvery { mockRepository.fetchInsult(any()) } returns InsultResponse(
+            insult = Insult(text = "Test Insult", index = 1),
+            image = Image(data = "test_data", mimetype = "image/jpeg", indexImg = 2)
+        )
+        // The screen's clock: the test scheduler's time.
+        val model = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings) { testScheduler.currentTime }
+
+        val first = backgroundScope.launch { model.autoRefresh() }
+        advanceTimeBy(1_000)
+        coVerify(exactly = 1) { mockRepository.fetchInsult(any()) }
+        first.cancel()                       // the activity is recreated (a rotation)...
+
+        val second = backgroundScope.launch { model.autoRefresh() }
+        advanceTimeBy(1_000)                 // ...and the new screen must not fetch again
+        coVerify(exactly = 1) { mockRepository.fetchInsult(any()) }
+        advanceTimeBy(8_500)                 // 10.5 s after the first fetch: the next tick
+        coVerify(exactly = 2) { mockRepository.fetchInsult(any()) }
+
+        second.cancel()
+        model.viewModelScope.cancel()
+    }
+
+    @Test
     fun `fetchInsult with network error updates uiState with error`() = runTest(testDispatcher) {
         coEvery { mockRepository.fetchInsult(any()) } throws IOException("Network error")
 
@@ -217,7 +241,7 @@ class InsultViewModelTest {
         every { mockSettings.isMuted } returns flow { delay(5_000); emit(true) }
         coEvery { mockSettings.setMuted(any()) } returns Unit
         every { mockTtsService.initialize(any()) } returns Unit
-        val lateModel = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings)
+        val lateModel = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings) { testDispatcher.scheduler.currentTime }
 
         lateModel.toggleMute()            // default true -> false before the store answers
         assertFalse(lateModel.uiState.value.isMuted)
@@ -230,7 +254,7 @@ class InsultViewModelTest {
     @Test
     fun `a persisted mute value is applied when the user has not chosen`() = runTest(testDispatcher) {
         every { mockSettings.isMuted } returns flowOf(false)
-        val model = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings)
+        val model = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings) { testDispatcher.scheduler.currentTime }
         assertTrue(model.uiState.value.isMuted)     // the default, until the store is read
         advanceUntilIdle()
         assertFalse(model.uiState.value.isMuted)
@@ -334,7 +358,7 @@ class InsultViewModelTest {
     fun `persisted level is loaded on init`() = runTest(testDispatcher) {
         every { mockSettings.insultLevel } returns flowOf(3)
 
-        val vm = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings)
+        val vm = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings) { testDispatcher.scheduler.currentTime }
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(3, vm.uiState.value.insultLevel)
