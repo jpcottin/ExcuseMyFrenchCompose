@@ -81,7 +81,7 @@ class InsultViewModelTest {
         every { mockSettings.isMuted } returns flowOf(true)
         every { mockSettings.insultLevel } returns flowOf(1)
 
-        viewModel = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings) { testDispatcher.scheduler.currentTime }
+        viewModel = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings, decodeDispatcher = testDispatcher) { testDispatcher.scheduler.currentTime }
     }
 
     @After
@@ -185,7 +185,7 @@ class InsultViewModelTest {
             image = Image(data = "test_data", mimetype = "image/jpeg", indexImg = 2)
         )
         // The screen's clock: the test scheduler's time.
-        val model = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings) { testScheduler.currentTime }
+        val model = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings, decodeDispatcher = testDispatcher) { testScheduler.currentTime }
 
         val first = backgroundScope.launch { model.autoRefresh() }
         advanceTimeBy(1_000)
@@ -241,7 +241,7 @@ class InsultViewModelTest {
         every { mockSettings.isMuted } returns flow { delay(5_000); emit(true) }
         coEvery { mockSettings.setMuted(any()) } returns Unit
         every { mockTtsService.initialize(any()) } returns Unit
-        val lateModel = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings) { testDispatcher.scheduler.currentTime }
+        val lateModel = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings, decodeDispatcher = testDispatcher) { testDispatcher.scheduler.currentTime }
 
         lateModel.toggleMute()            // default true -> false before the store answers
         assertFalse(lateModel.uiState.value.isMuted)
@@ -254,7 +254,7 @@ class InsultViewModelTest {
     @Test
     fun `a persisted mute value is applied when the user has not chosen`() = runTest(testDispatcher) {
         every { mockSettings.isMuted } returns flowOf(false)
-        val model = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings) { testDispatcher.scheduler.currentTime }
+        val model = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings, decodeDispatcher = testDispatcher) { testDispatcher.scheduler.currentTime }
         assertTrue(model.uiState.value.isMuted)     // the default, until the store is read
         advanceUntilIdle()
         assertFalse(model.uiState.value.isMuted)
@@ -279,7 +279,7 @@ class InsultViewModelTest {
     fun `a settings store that cannot be read leaves the defaults and does not crash`() = runTest(testDispatcher) {
         every { mockSettings.isMuted } returns flow { throw IOException("disk") }
         every { mockSettings.insultLevel } returns flow { throw IOException("disk") }
-        val model = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings) { testDispatcher.scheduler.currentTime }
+        val model = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings, decodeDispatcher = testDispatcher) { testDispatcher.scheduler.currentTime }
         advanceUntilIdle()
         assertTrue(model.uiState.value.isMuted)
         assertEquals(1, model.uiState.value.insultLevel)
@@ -369,7 +369,7 @@ class InsultViewModelTest {
     fun `persisted level is loaded on init`() = runTest(testDispatcher) {
         every { mockSettings.insultLevel } returns flowOf(3)
 
-        val vm = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings) { testDispatcher.scheduler.currentTime }
+        val vm = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings, decodeDispatcher = testDispatcher) { testDispatcher.scheduler.currentTime }
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(3, vm.uiState.value.insultLevel)
