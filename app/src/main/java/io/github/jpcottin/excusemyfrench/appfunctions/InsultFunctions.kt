@@ -1,6 +1,7 @@
 package io.github.jpcottin.excusemyfrench.appfunctions
 
 import androidx.appfunctions.AppFunctionAppUnknownException
+import java.io.IOException
 import androidx.appfunctions.AppFunctionContext
 import androidx.appfunctions.AppFunctionInvalidArgumentException
 import androidx.appfunctions.AppFunctionSerializable
@@ -60,8 +61,14 @@ class InsultFunctions {
         if (effectiveLevel !in 1..3) {
             throw AppFunctionInvalidArgumentException("maxLevel must be 1, 2, or 3 (got $maxLevel)")
         }
-        val response = repository.fetchInsult(effectiveLevel)
-            ?: throw AppFunctionAppUnknownException("Could not reach the insult service")
+        // Offline, DNS down, a timeout: the common failures surface as an IOException from
+        // the HTTP client, not as a null response, and the agent should get the documented
+        // error rather than the raw one.
+        val response = try {
+            repository.fetchInsult(effectiveLevel)
+        } catch (e: IOException) {
+            throw AppFunctionAppUnknownException("Could not reach the insult service")
+        } ?: throw AppFunctionAppUnknownException("Could not reach the insult service")
         return FrenchInsult(
             text = response.insult.text,
             level = response.insult.level

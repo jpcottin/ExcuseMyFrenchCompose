@@ -7,6 +7,7 @@ import io.github.jpcottin.excusemyfrench.data.model.Insult
 import io.github.jpcottin.excusemyfrench.data.model.InsultResponse
 import io.github.jpcottin.excusemyfrench.data.repository.InsultRepository
 import io.mockk.mockk
+import java.io.IOException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
@@ -29,6 +30,10 @@ class InsultFunctionsTest {
             lastRequestedLevel = level
             return response
         }
+    }
+
+    private class OfflineRepository : InsultRepository {
+        override suspend fun fetchInsult(level: Int): InsultResponse = throw IOException("Unable to resolve host")
     }
 
     private fun response(text: String, level: Int) =
@@ -71,6 +76,15 @@ class InsultFunctionsTest {
         assertThrows(AppFunctionInvalidArgumentException::class.java) {
             runTest { functions.getFrenchInsult(context, maxLevel = 7) }
         }
+    }
+
+    @Test
+    fun `no network throws the documented AppFunctionAppUnknownException, not the raw one`() {
+        val functions = InsultFunctions().apply { repository = OfflineRepository() }
+        val e = assertThrows(AppFunctionAppUnknownException::class.java) {
+            runTest { functions.getFrenchInsult(context, maxLevel = 1) }
+        }
+        assertEquals("Could not reach the insult service", e.message)
     }
 
     @Test
