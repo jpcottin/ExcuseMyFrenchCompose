@@ -276,6 +276,17 @@ class InsultViewModelTest {
     }
 
     @Test
+    fun `a settings store that cannot be read leaves the defaults and does not crash`() = runTest(testDispatcher) {
+        every { mockSettings.isMuted } returns flow { throw IOException("disk") }
+        every { mockSettings.insultLevel } returns flow { throw IOException("disk") }
+        val model = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings) { testDispatcher.scheduler.currentTime }
+        advanceUntilIdle()
+        assertTrue(model.uiState.value.isMuted)
+        assertEquals(1, model.uiState.value.insultLevel)
+        model.viewModelScope.cancel()
+    }
+
+    @Test
     fun `toggleMute updates isMuted state`() = runTest(testDispatcher) {
         assertTrue(viewModel.uiState.value.isMuted)
 

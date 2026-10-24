@@ -52,7 +52,7 @@ The layout adapts to the window size. In windows narrower than 600dp (phones in 
 *   **Networking:** OkHttp
 *   **JSON Parsing:** kotlinx.serialization
 *   **Asynchronous Programming:** Kotlin Coroutines (with `StateFlow`)
-*   **Dependency Injection:** Manual dependency injection (constructor injection for Repository and `TtsService`)
+*   **Dependency Injection:** Manual dependency injection (the repository and the settings store are constructor-injected and swapped in tests; `TtsService` is created by the view-model factory)
 *   **ViewModel:** `AndroidViewModel` (for access to application context)
 *   **Text-To-Speech:** Android `TextToSpeech` API abstracted behind a `TtsService` interface.
 *   **Preferences:** Jetpack DataStore (persists the mute state and insult level).
