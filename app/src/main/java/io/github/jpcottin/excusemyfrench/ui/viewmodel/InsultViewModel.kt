@@ -17,6 +17,7 @@ import io.github.jpcottin.excusemyfrench.util.ImageUtils
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
@@ -68,6 +69,11 @@ class InsultViewModel(
     // Same for the insult level picker.
     private var levelOverridden = false
 
+    // The saved level arrives from disk after the screen has already started its loop. A
+    // fetch waits for it: otherwise a cold start served (and spoke) a level-1 insult to a
+    // user who had chosen level 3, and the picker jumped to 3 under a level-1 insult.
+    private val levelLoaded: Job
+
     init {
         // The repository maps a read error to its defaults; this guard keeps any other
         // implementation (or a future error type) from taking the process down at start.
@@ -78,7 +84,7 @@ class InsultViewModel(
                 _uiState.update { it.copy(isMuted = savedMuted) }
             }
         }
-        viewModelScope.launch {
+        levelLoaded = viewModelScope.launch {
             val savedLevel = runCatching { settings.insultLevel.first() }
                 .onFailure { Log.e(TAG, "Could not read the level setting", it) }.getOrNull() ?: return@launch
             if (!levelOverridden) {
@@ -122,6 +128,7 @@ class InsultViewModel(
 
     @androidx.annotation.VisibleForTesting
     suspend fun fetchInsult() = fetchMutex.withLock {
+        levelLoaded.join()
         val startedAt = elapsedRealtimeMs()
         try {
             val response = repository.fetchInsult(_uiState.value.insultLevel)

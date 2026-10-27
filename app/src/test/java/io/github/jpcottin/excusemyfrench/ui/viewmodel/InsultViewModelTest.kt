@@ -325,6 +325,36 @@ class InsultViewModelTest {
     }
 
     @Test
+    fun `the first fetch waits for the saved level instead of using the default`() = runTest(testDispatcher) {
+        // The store answers after the screen has started the loop, as on a cold start.
+        every { mockSettings.insultLevel } returns flow { delay(500); emit(3) }
+        val model = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings, decodeDispatcher = testDispatcher) { testScheduler.currentTime }
+
+        val loop = backgroundScope.launch { model.autoRefresh() }
+        advanceTimeBy(100)
+        coVerify(exactly = 0) { mockRepository.fetchInsult(any()) }
+        advanceTimeBy(1_000)
+        coVerify(exactly = 1) { mockRepository.fetchInsult(3) }
+        coVerify(exactly = 0) { mockRepository.fetchInsult(1) }
+
+        loop.cancel()
+        model.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `a level the store cannot read does not hold the first fetch`() = runTest(testDispatcher) {
+        every { mockSettings.insultLevel } returns flow { delay(500); throw IOException("disk") }
+        val model = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings, decodeDispatcher = testDispatcher) { testScheduler.currentTime }
+
+        val loop = backgroundScope.launch { model.autoRefresh() }
+        advanceTimeBy(1_000)
+        coVerify(exactly = 1) { mockRepository.fetchInsult(1) }
+
+        loop.cancel()
+        model.viewModelScope.cancel()
+    }
+
+    @Test
     fun `a fetch cancelled with its screen is retried as soon as the loop restarts`() = runTest(testDispatcher) {
         coEvery { mockRepository.fetchInsult(any()) } coAnswers {
             delay(5_000); InsultResponse(insult = Insult(text = "Late", index = 1))
