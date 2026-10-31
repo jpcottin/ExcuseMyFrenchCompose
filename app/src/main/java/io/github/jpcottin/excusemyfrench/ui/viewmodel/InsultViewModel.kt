@@ -205,7 +205,10 @@ class InsultViewModel(
         ttsService.initialize { errorMessage ->
             handleTTSError(errorMessage)
         }
-        ttsService.speak(text)
+        // The note from an earlier failure (an engine that died, say) used to outlive the
+        // failure: nothing withdrew it once a fresh engine spoke again. A problem that
+        // persists reports itself again through the callback above, so the note stays put.
+        if (ttsService.speak(text)) _uiState.update { it.copy(ttsError = null) }
     }
 
     override fun retryFetch() {

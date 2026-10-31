@@ -8,6 +8,8 @@ import io.mockk.mockk
 import io.mockk.verify
 import java.util.Locale
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -111,6 +113,18 @@ class TtsServiceImplTest {
         verify(exactly = 1) { engines[0].shutdown() }
         initialize()
         assertEquals(2, engines.size)
+    }
+
+    @Test
+    fun `speak says whether the engine took the text`() {
+        initialize()
+        assertFalse(service.speak("Bonjour"))                // held for the engine still starting
+        listeners[0].onInit(TextToSpeech.SUCCESS)
+        assertTrue(service.speak("Encore"))
+
+        every { engines[0].speak(any(), any(), any(), any()) } returns TextToSpeech.ERROR
+        assertFalse(service.speak("Hélas"))                  // the engine failed on it
+        assertEquals(listOf("TTS Initialization failed."), errors)
     }
 
     @Test

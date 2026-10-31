@@ -15,6 +15,8 @@ import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.just
+import io.mockk.Runs
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
@@ -446,6 +448,48 @@ class InsultViewModelTest {
         assertTrue(uiState.ttsError!!.contains(errorMessage))
         // The content error channel stays untouched so the insult remains visible.
         assertNull(uiState.error)
+
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `the TTS note is withdrawn once the engine speaks again`() = runTest(testDispatcher) {
+        coEvery { mockRepository.fetchInsult(any()) } returns InsultResponse(insult = Insult(text = "Encore"))
+        // The engine died: unmuting reports it.
+        every { mockTtsService.initialize(any()) } answers {
+            firstArg<(String) -> Unit>().invoke("TTS Initialization failed.")
+        }
+        viewModel.toggleMute()
+        assertNotNull(viewModel.uiState.value.ttsError)
+
+        // Its replacement is still starting: the next insult is held, the note stays.
+        every { mockTtsService.initialize(any()) } just Runs
+        every { mockTtsService.speak(any()) } returns false
+        viewModel.fetchInsult()
+        assertNotNull(viewModel.uiState.value.ttsError)
+
+        // The replacement speaks: the note goes.
+        every { mockTtsService.speak(any()) } returns true
+        viewModel.fetchInsult()
+        assertNull(viewModel.uiState.value.ttsError)
+
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `a TTS problem that persists keeps its note`() = runTest(testDispatcher) {
+        coEvery { mockRepository.fetchInsult(any()) } returns InsultResponse(insult = Insult(text = "Encore"))
+        // No French voice: every initialize reports it, and nothing is ever spoken.
+        every { mockTtsService.initialize(any()) } answers {
+            firstArg<(String) -> Unit>().invoke("French language is not supported.")
+        }
+        every { mockTtsService.speak(any()) } returns false
+        viewModel.toggleMute()
+        viewModel.fetchInsult()
+        viewModel.fetchInsult()
+
+        assertEquals("French language is not supported.", viewModel.uiState.value.ttsError)
+        assertEquals("Encore", viewModel.uiState.value.insultText)
 
         viewModel.viewModelScope.cancel()
     }
