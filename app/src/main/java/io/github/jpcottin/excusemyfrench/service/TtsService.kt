@@ -7,7 +7,12 @@ import java.util.Locale
 
 interface TtsService {
     fun initialize(onError: (String) -> Unit)
-    fun speak(text: String)
+    /**
+     * Speaks [text]. True when the engine has taken it; false when it is held for an engine
+     * still starting (spoken, or reported through [initialize]'s callback, once that settles)
+     * or when the engine failed on it (reported the same way).
+     */
+    fun speak(text: String): Boolean
     /** Stops what is being spoken and forgets anything queued; the engine stays ready. */
     fun stop()
     fun shutdown()
@@ -57,18 +62,20 @@ class TtsServiceImpl(
         if (failed) discardEngine()
     }
 
-    override fun speak(text: String) {
+    override fun speak(text: String): Boolean {
         val engine = tts
         if (!isReady || engine == null) {
             pendingText = text
-            return
+            return false
         }
         // ERROR here means the engine is gone (its process died, or the user switched engines):
         // drop it so the next initialize() builds a fresh one, and say so.
         if (engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, TTS_UTTERANCE_ID) == TextToSpeech.ERROR) {
             discardEngine()
             onError?.invoke(context.getString(R.string.tts_init_failed))
+            return false
         }
+        return true
     }
 
     override fun stop() {
