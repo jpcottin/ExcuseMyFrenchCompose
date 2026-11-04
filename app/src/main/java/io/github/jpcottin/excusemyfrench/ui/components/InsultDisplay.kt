@@ -148,22 +148,13 @@ private fun PortraitLayout(
             }
         }
 
-        // The note and the control bar share the bottom edge in one row, so a TTS
-        // problem is never drawn underneath the level buttons on a narrow screen.
+        // The notes and the control bar share the bottom edge in one row, so a note
+        // is never drawn underneath the level buttons on a narrow screen.
         Row(
             modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
             verticalAlignment = Alignment.Bottom
         ) {
-            // TTS problems are shown as a small unobtrusive note; the insult stays visible.
-            Text(
-                text = uiState.ttsError ?: "",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag("ttsError")
-                    .semantics { liveRegion = LiveRegionMode.Polite }
-            )
+            Notes(uiState = uiState, modifier = Modifier.weight(1f))
             ControlBar(
                 uiState = uiState,
                 onToggleMute = onToggleMute,
@@ -212,22 +203,13 @@ private fun WideLayout(
             }
         }
 
-        // The note and the control bar share the bottom edge in one row, so a TTS
-        // problem is never drawn underneath the level buttons on a narrow screen.
+        // The notes and the control bar share the bottom edge in one row, so a note
+        // is never drawn underneath the level buttons on a narrow screen.
         Row(
             modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
             verticalAlignment = Alignment.Bottom
         ) {
-            // TTS problems are shown as a small unobtrusive note; the insult stays visible.
-            Text(
-                text = uiState.ttsError ?: "",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag("ttsError")
-                    .semantics { liveRegion = LiveRegionMode.Polite }
-            )
+            Notes(uiState = uiState, modifier = Modifier.weight(1f))
             ControlBar(
                 uiState = uiState,
                 onToggleMute = onToggleMute,
@@ -239,13 +221,48 @@ private fun WideLayout(
     }
 }
 
+/** A fetch that failed while an insult is on screen: the insult stays, the failure is a note. */
+private fun InsultUiState.refreshFailed(): Boolean = error != null && insultText.isNotEmpty()
+
+/**
+ * Small unobtrusive notes along the bottom edge; the insult stays visible above them: a
+ * TTS problem, and a refresh that failed after an insult was already on screen. The loop
+ * tries again by itself, so the full error and its Retry button are kept for a first
+ * load that has nothing else to show.
+ */
+@Composable
+private fun Notes(uiState: InsultUiState, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(
+            text = uiState.ttsError ?: "",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("ttsError")
+                .semantics { liveRegion = LiveRegionMode.Polite }
+        )
+        Text(
+            text = if (uiState.refreshFailed()) uiState.error.orEmpty() else "",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("refreshError")
+                .semantics { liveRegion = LiveRegionMode.Polite }
+        )
+    }
+}
+
 @Composable
 private fun InsultTextSection(uiState: InsultUiState, onRetry: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-        if (uiState.error != null) {
+        // A failed refresh keeps the insult it would have replaced (see Notes); the error
+        // takes the text's place only when there is no insult to keep.
+        if (uiState.error != null && !uiState.refreshFailed()) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = uiState.error,

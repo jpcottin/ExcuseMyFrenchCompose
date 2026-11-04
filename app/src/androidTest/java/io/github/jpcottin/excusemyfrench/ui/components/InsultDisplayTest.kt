@@ -72,6 +72,27 @@ class InsultDisplayTest {
     }
 
     @Test
+    fun insultDisplay_refreshFailure_keepsTheInsultAndNotesTheFailure() {
+        // A refresh that fails after an insult is on screen used to swap the insult text for
+        // the error and a Retry button, above the image the insult came with.
+        val testInsult = "Espèce d'idiot !"
+        val errorText = context.getString(R.string.no_internet)
+        composeTestRule.setContent {
+            ExcuseMyFrenchComposeTheme {
+                InsultDisplay(viewModel = FakeViewModel(InsultUiState(insultText = testInsult, imageBitmap = createTestBitmap(), error = errorText, isLoading = false)))
+            }
+        }
+
+        composeTestRule.onNodeWithTag("insultText").assertIsDisplayed()
+        composeTestRule.onNodeWithText(testInsult).assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription(context.getString(R.string.insult_image)).assertIsDisplayed()
+        composeTestRule.onNodeWithTag("refreshError").assertIsDisplayed()
+        composeTestRule.onNodeWithText(errorText).assertIsDisplayed()
+        composeTestRule.onNodeWithTag("errorText").assertDoesNotExist()
+        composeTestRule.onNodeWithTag("retryButton").assertDoesNotExist()
+    }
+
+    @Test
     fun insultDisplay_emptyState_showsPlaceholder() {
         val noInsultText = "No insult available"
         composeTestRule.setContent {
