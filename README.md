@@ -35,7 +35,7 @@ The app consists of a single screen that displays:
 *   An associated image.
 *   A divider between the text and image.
 *   A loading indicator while data is being fetched.
-*   An error message if data fetching fails.
+*   An error message if data fetching fails. A refresh that fails after an insult is on screen keeps the insult and notes the failure under it; the next refresh clears the note.
 *   A Text-To-Speech (TTS) feature that reads the insult aloud in French. TTS problems are shown as a small note without hiding the insult, and the note is withdrawn once speech works again.
 *   A mute/unmute toggle button.
 *   Pause/resume and next buttons to control the automatic insult refresh.
