@@ -131,7 +131,12 @@ class InsultViewModel(
         levelLoaded.join()
         val startedAt = elapsedRealtimeMs()
         try {
-            val response = repository.fetchInsult(_uiState.value.insultLevel)
+            val level = _uiState.value.insultLevel
+            val response = repository.fetchInsult(level)
+            // The picker moved while this request was out: its insult is for a level the
+            // user no longer wants, and the fetch the change queued brings the right one.
+            // Shown (and spoken), it would sit under the new choice until that one lands.
+            if (_uiState.value.insultLevel != level) return@withLock
             if (response != null) {
                 val bitmap = withContext(decodeDispatcher) { ImageUtils.decodeImage(response.image.data) }?.asImageBitmap()
                 val text = response.insult.text.ifBlank { "No insult text provided" }
