@@ -520,6 +520,34 @@ class InsultViewModelTest {
     }
 
     @Test
+    fun `a level change while a fetch is in flight drops that fetch's insult`() = runTest(testDispatcher) {
+        coEvery { mockRepository.fetchInsult(1) } coAnswers {
+            delay(3_000); InsultResponse(insult = Insult(text = "Mild", index = 1, level = 1))
+        }
+        coEvery { mockRepository.fetchInsult(3) } coAnswers {
+            delay(3_000); InsultResponse(insult = Insult(text = "Harsh", index = 2, level = 3))
+        }
+        advanceUntilIdle()
+        viewModel.toggleMute()                                   // unmuted: what is shown is spoken
+        val loop = backgroundScope.launch { viewModel.autoRefresh() }
+        advanceTimeBy(1_000)                                     // the level-1 request is out...
+        viewModel.setInsultLevel(3)                              // ...when the picker moves
+
+        advanceTimeBy(2_500)                                     // its response has landed
+        assertNotEquals("Mild", viewModel.uiState.value.insultText)
+        assertTrue(viewModel.uiState.value.isLoading)            // still waiting for level 3
+
+        advanceTimeBy(3_500)
+        assertEquals("Harsh", viewModel.uiState.value.insultText)
+        assertFalse(viewModel.uiState.value.isLoading)
+        verify(exactly = 1) { mockTtsService.speak(any()) }
+        verify { mockTtsService.speak("Harsh") }
+
+        loop.cancel()
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
     fun `setInsultLevel updates state, persists and refetches with new level`() = runTest(testDispatcher) {
         coEvery { mockRepository.fetchInsult(any()) } returns InsultResponse(
             insult = Insult(text = "Level 2 Insult", index = 1, level = 2),
