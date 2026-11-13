@@ -25,6 +25,7 @@ import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -396,6 +397,24 @@ class InsultViewModelTest {
 
         assertEquals("Tard", viewModel.uiState.value.insultText) // the content still lands
         verify(exactly = 1) { mockTtsService.speak(any()) }
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `text held for a starting engine is dropped once the screen has gone`() = runTest(testDispatcher) {
+        coEvery { mockRepository.fetchInsult(any()) } returns InsultResponse(insult = Insult(text = "Tenu", index = 1))
+        every { mockTtsService.speak(any()) } returns false      // the engine is still starting
+        advanceUntilIdle()
+        viewModel.toggleMute()                                   // unmuted: the engine starts
+        val loop = backgroundScope.launch { viewModel.autoRefresh() }
+        advanceTimeBy(1_000)                                     // the insult is handed to the engine
+        verify(exactly = 1) { mockTtsService.speak("Tenu") }
+        verify(exactly = 0) { mockTtsService.dropHeld() }
+
+        loop.cancelAndJoin()                                     // Home before the engine is ready
+
+        verify(exactly = 1) { mockTtsService.dropHeld() }
+        verify(exactly = 0) { mockTtsService.stop() }            // nothing being spoken is cut
         viewModel.viewModelScope.cancel()
     }
 

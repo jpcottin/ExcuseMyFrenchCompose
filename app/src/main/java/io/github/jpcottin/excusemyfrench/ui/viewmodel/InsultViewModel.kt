@@ -119,6 +119,11 @@ class InsultViewModel(
             }
         } finally {
             screenGone = true
+            // Text handed to an engine still starting is spoken from the engine's own
+            // callback, past the guard in speak(): an unmute followed by Home within the
+            // second the engine takes to come up had the insult read out over the home
+            // screen. The screen that asked for it is gone, so the text goes with it.
+            ttsService.dropHeld()
         }
     }
 
