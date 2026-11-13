@@ -59,6 +59,18 @@ class TtsServiceImplTest {
     }
 
     @Test
+    fun `dropHeld forgets the held text and leaves the engine alone`() {
+        initialize()
+        service.speak("Bonjour")
+        service.dropHeld()
+        listeners[0].onInit(TextToSpeech.SUCCESS)
+
+        verify(exactly = 0) { engines[0].speak(any(), any(), any(), any()) }
+        verify(exactly = 0) { engines[0].stop() }
+        assertTrue(service.speak("Encore"))                      // the engine came up and is kept
+    }
+
+    @Test
     fun `a failed engine is reported and discarded so the next initialize retries`() {
         initialize()
         listeners[0].onInit(TextToSpeech.ERROR)

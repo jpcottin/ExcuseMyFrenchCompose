@@ -15,6 +15,8 @@ interface TtsService {
     fun speak(text: String): Boolean
     /** Stops what is being spoken and forgets anything queued; the engine stays ready. */
     fun stop()
+    /** Forgets text held for an engine still starting; what is being spoken goes on. */
+    fun dropHeld()
     fun shutdown()
 }
 
@@ -81,6 +83,10 @@ class TtsServiceImpl(
     override fun stop() {
         pendingText = null
         tts?.stop()
+    }
+
+    override fun dropHeld() {
+        pendingText = null
     }
 
     override fun shutdown() {

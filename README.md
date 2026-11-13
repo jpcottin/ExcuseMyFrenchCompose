@@ -36,7 +36,7 @@ The app consists of a single screen that displays:
 *   A divider between the text and image.
 *   A loading indicator while data is being fetched.
 *   An error message if data fetching fails. A refresh that fails after an insult is on screen keeps the insult and notes the failure under it; the next refresh clears the note.
-*   A Text-To-Speech (TTS) feature that reads the insult aloud in French. TTS problems are shown as a small note without hiding the insult, and the note is withdrawn once speech works again.
+*   A Text-To-Speech (TTS) feature that reads the insult aloud in French. TTS problems are shown as a small note without hiding the insult, and the note is withdrawn once speech works again. An insult is spoken only while its screen is there: one that arrives after the user has left is shown but not spoken, and one handed to an engine still starting is dropped when the screen goes.
 *   A mute/unmute toggle button.
 *   Pause/resume and next buttons to control the automatic insult refresh.
 *   A level selector (1/2/3) to choose the maximum insult level: 1 = family-friendly, 2 = adds vulgar, 3 = adds offensive. Levels are cumulative, the choice is persisted across launches, and the app defaults to level 1 on first launch.
