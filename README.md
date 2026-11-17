@@ -88,7 +88,7 @@ the multi-run job locally in a few minutes instead of a push cycle.
 
 ## AppFunctions
 
-On Android 16+, the app registers the `getFrenchInsult` AppFunction so on-device agents (assistants, voice commands, system shortcuts) can fetch an insult without opening the UI. It takes an optional `maxLevel` parameter (1–3, same semantics as the in-app level selector; omitted or 0 means level 1) and returns the insult text and its level. Test it from a shell:
+On Android 16+, the app registers the `getFrenchInsult` AppFunction so on-device agents (assistants, voice commands, system shortcuts) can fetch an insult without opening the UI. It takes an optional `maxLevel` parameter (1–3, same semantics as the in-app level selector; omitted or 0 means level 1) and returns the insult text and its level. An unreachable service, or a reply that carries no insult, is an `AppFunctionAppUnknownException`, never a placeholder text. Test it from a shell:
 
 ```bash
 adb shell cmd app_function execute-app-function \
