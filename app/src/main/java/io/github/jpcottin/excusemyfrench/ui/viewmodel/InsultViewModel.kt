@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.jpcottin.excusemyfrench.R
+import io.github.jpcottin.excusemyfrench.data.model.Insult
 import io.github.jpcottin.excusemyfrench.data.repository.InsultRepository
 import io.github.jpcottin.excusemyfrench.data.settings.DataStoreSettingsRepository
 import io.github.jpcottin.excusemyfrench.data.settings.SettingsRepository
@@ -58,6 +59,8 @@ class InsultViewModel(
     companion object {
         private const val REFRESH_INTERVAL = 10000L
         private const val TAG = "InsultViewModel"
+        /** What a reply that carries no insult decodes to. */
+        private val NO_INSULT = Insult().text
     }
 
     private val _uiState = MutableStateFlow(InsultUiState(isLoading = true))
@@ -142,9 +145,13 @@ class InsultViewModel(
             // user no longer wants, and the fetch the change queued brings the right one.
             // Shown (and spoken), it would sit under the new choice until that one lands.
             if (_uiState.value.insultLevel != level) return@withLock
-            if (response != null) {
+            // A reply without an insult decodes to the model's placeholder ("No insult
+            // available"), a blank one to "": neither is an insult. Shown and spoken as one,
+            // either replaced the insult on screen with a stand-in sentence; reported as a
+            // failed load, the last insult stays up under the error and nothing is read out.
+            val text = response?.insult?.text?.takeUnless { it.isBlank() || it == NO_INSULT }
+            if (response != null && text != null) {
                 val bitmap = withContext(decodeDispatcher) { ImageUtils.decodeImage(response.image.data) }?.asImageBitmap()
-                val text = response.insult.text.ifBlank { "No insult text provided" }
                 updateUIWithSuccess(text, bitmap)
                 speak(text)
             } else {
