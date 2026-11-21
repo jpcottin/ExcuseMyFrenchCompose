@@ -126,17 +126,40 @@ class InsultViewModelTest {
     }
 
     @Test
-    fun `fetchInsult with blank text shows the placeholder`() = runTest(testDispatcher) {
+    fun `a blank insult is a failed load, not a stand-in sentence`() = runTest(testDispatcher) {
         coEvery { mockRepository.fetchInsult(any()) } returns InsultResponse(
             insult = Insult(text = "   ", index = 1),
             image = Image(data = "test_data", mimetype = "image/jpeg", indexImg = 2)
         )
+        every { mockSettings.isMuted } returns flowOf(false)
+        viewModel = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings, decodeDispatcher = testDispatcher) { testDispatcher.scheduler.currentTime }
+        advanceUntilIdle()
 
         viewModel.fetchInsult()
 
         val uiState = viewModel.uiState.value
-        assertEquals("No insult text provided", uiState.insultText)
-        assertNull(uiState.error)
+        assertEquals("", uiState.insultText)
+        assertEquals("Could not load insult.  Please try again later.", uiState.error)
+        assertFalse(uiState.isLoading)
+        verify(exactly = 0) { mockTtsService.speak(any()) }
+
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun `a reply without an insult keeps the last one on screen`() = runTest(testDispatcher) {
+        coEvery { mockRepository.fetchInsult(any()) } returns InsultResponse(
+            insult = Insult(text = "Espèce de cornichon", index = 4, level = 1),
+        )
+        viewModel.fetchInsult()
+        // The service answered, but without its insult: the decoded model's placeholder.
+        coEvery { mockRepository.fetchInsult(any()) } returns InsultResponse()
+
+        viewModel.fetchInsult()
+
+        val uiState = viewModel.uiState.value
+        assertEquals("Espèce de cornichon", uiState.insultText)
+        assertEquals("Could not load insult.  Please try again later.", uiState.error)
         assertFalse(uiState.isLoading)
 
         viewModel.viewModelScope.cancel()
