@@ -166,6 +166,31 @@ class InsultViewModelTest {
     }
 
     @Test
+    fun `an insult above the chosen level is neither shown nor spoken`() = runTest(testDispatcher) {
+        coEvery { mockRepository.fetchInsult(1) } returns InsultResponse(
+            insult = Insult(text = "Espèce de cornichon", index = 4, level = 1),
+        )
+        every { mockSettings.isMuted } returns flowOf(false)
+        viewModel = InsultViewModel(mockApplication, mockRepository, mockTtsService, mockSettings, decodeDispatcher = testDispatcher) { testDispatcher.scheduler.currentTime }
+        advanceUntilIdle()
+        viewModel.fetchInsult()
+        // Asked for level 1, the service answers with a level-3 insult.
+        coEvery { mockRepository.fetchInsult(1) } returns InsultResponse(
+            insult = Insult(text = "Connard", index = 9, level = 3),
+        )
+
+        viewModel.fetchInsult()
+
+        val uiState = viewModel.uiState.value
+        assertEquals("Espèce de cornichon", uiState.insultText)
+        assertEquals("Could not load insult.  Please try again later.", uiState.error)
+        assertFalse(uiState.isLoading)
+        verify(exactly = 0) { mockTtsService.speak("Connard") }
+
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
     fun `fetchInsult with an unexpected exception reports could not load`() = runTest(testDispatcher) {
         coEvery { mockRepository.fetchInsult(any()) } throws IllegalStateException("malformed payload")
 

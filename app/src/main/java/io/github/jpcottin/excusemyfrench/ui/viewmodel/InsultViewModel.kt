@@ -149,7 +149,12 @@ class InsultViewModel(
             // available"), a blank one to "": neither is an insult. Shown and spoken as one,
             // either replaced the insult on screen with a stand-in sentence; reported as a
             // failed load, the last insult stays up under the error and nothing is read out.
-            val text = response?.insult?.text?.takeUnless { it.isBlank() || it == NO_INSULT }
+            // The level is what keeps vulgar and offensive insults opt-in, and the server is
+            // the only thing applying it: one above the level asked for is refused like a
+            // missing one rather than shown and read out to a user who chose family-friendly.
+            val text = response?.insult
+                ?.takeUnless { it.level > level }
+                ?.text?.takeUnless { it.isBlank() || it == NO_INSULT }
             if (response != null && text != null) {
                 val bitmap = withContext(decodeDispatcher) { ImageUtils.decodeImage(response.image.data) }?.asImageBitmap()
                 updateUIWithSuccess(text, bitmap)
