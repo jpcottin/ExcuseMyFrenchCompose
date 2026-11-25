@@ -112,4 +112,13 @@ class InsultFunctionsTest {
             runTest { functions.getFrenchInsult(context, maxLevel = 1) }
         }
     }
+
+    @Test
+    fun `an insult above maxLevel is an error, not the answer`() {
+        val functions = InsultFunctions().apply { repository = FakeRepository(response("Connard !", 3)) }
+        val e = assertThrows(AppFunctionAppUnknownException::class.java) {
+            runTest { functions.getFrenchInsult(context, maxLevel = 1) }
+        }
+        assertEquals("The insult service returned no insult", e.message)
+    }
 }

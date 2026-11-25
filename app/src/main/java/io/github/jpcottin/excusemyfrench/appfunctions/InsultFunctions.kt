@@ -49,7 +49,8 @@ class InsultFunctions {
      * @return The fetched [FrenchInsult].
      * @throws AppFunctionInvalidArgumentException If [maxLevel] is not 0, 1, 2, or 3.
      * @throws AppFunctionAppUnknownException If the insult service is unreachable or
-     * answers without an insult; suggest the user check their internet connection and retry.
+     * answers without an insult (or with one above [maxLevel]); suggest the user check their
+     * internet connection and retry.
      */
     @AppFunction(isDescribedByKDoc = true)
     suspend fun getFrenchInsult(
@@ -73,7 +74,8 @@ class InsultFunctions {
         // available", level -1) and a blank one to "": neither is an insult, and an
         // agent would read either out as one.
         val insult = response.insult
-        if (insult.text.isBlank() || insult.level !in 1..3) {
+        // One above the level asked for is refused too: the agent asked for at most that.
+        if (insult.text.isBlank() || insult.level !in 1..effectiveLevel) {
             throw AppFunctionAppUnknownException("The insult service returned no insult")
         }
         return FrenchInsult(

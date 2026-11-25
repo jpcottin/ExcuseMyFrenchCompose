@@ -39,7 +39,7 @@ The app consists of a single screen that displays:
 *   A Text-To-Speech (TTS) feature that reads the insult aloud in French. TTS problems are shown as a small note without hiding the insult, and the note is withdrawn once speech works again. An insult is spoken only while its screen is there: one that arrives after the user has left is shown but not spoken, and one handed to an engine still starting is dropped when the screen goes.
 *   A mute/unmute toggle button.
 *   Pause/resume and next buttons to control the automatic insult refresh.
-*   A level selector (1/2/3) to choose the maximum insult level: 1 = family-friendly, 2 = adds vulgar, 3 = adds offensive. Levels are cumulative, the choice is persisted across launches, and the app defaults to level 1 on first launch.
+*   A level selector (1/2/3) to choose the maximum insult level: 1 = family-friendly, 2 = adds vulgar, 3 = adds offensive. Levels are cumulative, the choice is persisted across launches, and the app defaults to level 1 on first launch. An insult the service sends above the chosen level counts as a failed load: it is neither shown nor read out.
 *   An AppFunction (`getFrenchInsult`) that lets on-device AI agents and the Android system fetch an insult without opening the app UI (Android 16+).
 *   An adaptive launcher icon (beret-wearing robot on the French flag) with a monochrome layer for Android 13+ themed home screens.
 
@@ -88,7 +88,7 @@ the multi-run job locally in a few minutes instead of a push cycle.
 
 ## AppFunctions
 
-On Android 16+, the app registers the `getFrenchInsult` AppFunction so on-device agents (assistants, voice commands, system shortcuts) can fetch an insult without opening the UI. It takes an optional `maxLevel` parameter (1–3, same semantics as the in-app level selector; omitted or 0 means level 1) and returns the insult text and its level. An unreachable service, or a reply that carries no insult, is an `AppFunctionAppUnknownException`, never a placeholder text. Test it from a shell:
+On Android 16+, the app registers the `getFrenchInsult` AppFunction so on-device agents (assistants, voice commands, system shortcuts) can fetch an insult without opening the UI. It takes an optional `maxLevel` parameter (1–3, same semantics as the in-app level selector; omitted or 0 means level 1) and returns the insult text and its level. An unreachable service, or a reply that carries no insult or one above `maxLevel`, is an `AppFunctionAppUnknownException`, never a placeholder text. Test it from a shell:
 
 ```bash
 adb shell cmd app_function execute-app-function \
